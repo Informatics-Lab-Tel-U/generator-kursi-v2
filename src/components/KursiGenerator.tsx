@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { STUDENTS, MATKUL_OPTIONS, KELAS_MAP, type Student } from './mockData';
+import TiptapEditor from './TiptapEditor';
 import './KursiGenerator.css';
 
 const TOTAL_SEATS = 50;
@@ -13,13 +14,6 @@ interface TimerState {
   duration: number;
   remaining: number;
   isRunning: boolean;
-}
-
-interface NotesState {
-  ip: string;
-  username: string;
-  password: string;
-  instructions: string;
 }
 
 type TabId = 'seats' | 'notes' | 'countdown';
@@ -68,13 +62,9 @@ export default function KursiGenerator() {
   });
   const timerRef = useRef<number | null>(null);
 
-  const [notes, setNotes] = useState<NotesState>({
-    ip: '10.34.1.100',
-    username: 'praktikan',
-    password: 'Prakt1k@n2025',
-    instructions:
-      'Selamat mengerjakan Modul 3 — Linked List.\nWaktu pengerjaan: 90 menit.\nDilarang menggunakan HP selama praktikum berlangsung.',
-  });
+  const [notes, setNotes] = useState<string>(
+    '<h2>Kredensial Server</h2><ul><li><strong>IP Address:</strong> 10.34.1.100</li><li><strong>Username:</strong> praktikan</li><li><strong>Password:</strong> <code>Prakt1k@n2025</code></li></ul><hr><h2>Instruksi</h2><p>Selamat mengerjakan Modul 3 — Linked List.</p><p>Waktu pengerjaan: 90 menit.</p><p>Dilarang menggunakan HP selama praktikum berlangsung.</p>'
+  );
 
   // Persist / restore
   useEffect(() => {
@@ -313,69 +303,45 @@ export default function KursiGenerator() {
 
         {/* Notes editor */}
         <div className="sidebar-section">
-          <label className="sidebar-label">Catatan & Kredensial</label>
-          <input
-            type="text"
-            className="sidebar-input"
-            placeholder="IP Server"
-            value={notes.ip}
-            onChange={(e) => setNotes((p) => ({ ...p, ip: e.target.value }))}
-          />
-          <input
-            type="text"
-            className="sidebar-input"
-            placeholder="Username"
-            value={notes.username}
-            onChange={(e) => setNotes((p) => ({ ...p, username: e.target.value }))}
-          />
-          <input
-            type="text"
-            className="sidebar-input"
-            placeholder="Password"
-            value={notes.password}
-            onChange={(e) => setNotes((p) => ({ ...p, password: e.target.value }))}
-          />
-          <textarea
-            className="sidebar-textarea"
-            placeholder="Instruksi modul..."
-            value={notes.instructions}
-            onChange={(e) => setNotes((p) => ({ ...p, instructions: e.target.value }))}
-            rows={3}
-          />
+          <label className="sidebar-label">Catatan</label>
+          <div className="sidebar-info">
+            Catatan dapat diubah langsung melalui tab <strong>Catatan</strong>.
+          </div>
         </div>
       </aside>
 
       {/* ── Main ── */}
       <main className="main-content">
         <header className="main-header">
-          <h1 className="main-title">🪑 Generator Ganjil 25/26</h1>
-          {assignedCount > 0 && (
-            <span className="main-subtitle">
-              {assignedCount}/{activeSeatCount} kursi terisi
-            </span>
-          )}
-        </header>
+          <div className="header-left">
+            <h1 className="main-title">Generator Ganjil 25/26</h1>
+            {assignedCount > 0 && (
+              <span className="main-subtitle">
+                {assignedCount}/{activeSeatCount} kursi terisi
+              </span>
+            )}
+          </div>
 
-        <div className="tab-bar">
-          {([
-            ['seats', 'Kursi'],
-            ['notes', 'Catatan'],
-            ['countdown', 'Hitung Mundur'],
-          ] as [TabId, string][]).map(([id, label]) => (
-            <button
-              key={id}
-              className={`tab ${activeTab === id ? 'active' : ''}`}
-              onClick={() => setActiveTab(id)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+          <div className="tab-bar">
+            {([
+              ['seats', 'Kursi'],
+              ['notes', 'Catatan'],
+              ['countdown', 'Hitung Mundur'],
+            ] as [TabId, string][]).map(([id, label]) => (
+              <button
+                key={id}
+                className={`tab ${activeTab === id ? 'active' : ''}`}
+                onClick={() => setActiveTab(id)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </header>
 
         {/* ─ Seats ─ */}
         {activeTab === 'seats' && (
           <div>
-            <p className="result-label">Hasil:</p>
             <div className="seat-grid">
               {columns.map((column, colIdx) => (
                 <div key={colIdx} className="seat-column">
@@ -437,29 +403,7 @@ export default function KursiGenerator() {
         {/* ─ Notes ─ */}
         {activeTab === 'notes' && (
           <div className="notes-tab">
-            <div className="notes-section">
-              <h2 className="notes-section-title">Kredensial Server</h2>
-              <table className="credentials-table">
-                <tbody>
-                  <tr>
-                    <td>IP Address</td>
-                    <td>{notes.ip}</td>
-                  </tr>
-                  <tr>
-                    <td>Username</td>
-                    <td>{notes.username}</td>
-                  </tr>
-                  <tr>
-                    <td>Password</td>
-                    <td>{notes.password}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div className="notes-section">
-              <h2 className="notes-section-title">Instruksi</h2>
-              <pre className="notes-instructions">{notes.instructions}</pre>
-            </div>
+            <TiptapEditor content={notes} onUpdate={setNotes} />
           </div>
         )}
 
