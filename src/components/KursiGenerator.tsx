@@ -24,8 +24,6 @@ interface NotesState {
 
 type TabId = 'seats' | 'notes' | 'countdown';
 
-/* ── Helpers ── */
-
 function formatTime(totalSeconds: number): string {
   const h = Math.floor(totalSeconds / 3600);
   const m = Math.floor((totalSeconds % 3600) / 60);
@@ -52,27 +50,17 @@ function makeEmptySeats(): SeatData[] {
   }));
 }
 
-/* ── Component ── */
-
 export default function KursiGenerator() {
-  /* Data selection */
   const [matkul, setMatkul] = useState('ALPRO2');
   const [kelas, setKelas] = useState('IF-GABREM');
-
-  /* Seats */
   const [seats, setSeats] = useState<SeatData[]>(makeEmptySeats);
   const [disabledSeats, setDisabledSeats] = useState<Set<number>>(new Set());
-
-  /* UI */
   const [activeTab, setActiveTab] = useState<TabId>('seats');
   const [isLoading, setIsLoading] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
-
-  /* Drag */
   const [dragSourceSeat, setDragSourceSeat] = useState<number | null>(null);
   const [dragOverSeat, setDragOverSeat] = useState<number | null>(null);
 
-  /* Timer */
   const [timer, setTimer] = useState<TimerState>({
     duration: 90,
     remaining: 90 * 60,
@@ -80,7 +68,6 @@ export default function KursiGenerator() {
   });
   const timerRef = useRef<number | null>(null);
 
-  /* Notes */
   const [notes, setNotes] = useState<NotesState>({
     ip: '10.34.1.100',
     username: 'praktikan',
@@ -89,7 +76,7 @@ export default function KursiGenerator() {
       'Selamat mengerjakan Modul 3 — Linked List.\nWaktu pengerjaan: 90 menit.\nDilarang menggunakan HP selama praktikum berlangsung.',
   });
 
-  /* ── Persist / restore from localStorage ── */
+  // Persist / restore
   useEffect(() => {
     try {
       const saved = localStorage.getItem('kursi-gen');
@@ -102,9 +89,7 @@ export default function KursiGenerator() {
         if (p.timer) setTimer({ ...p.timer, isRunning: false });
         if (p.notes) setNotes(p.notes);
       }
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
   }, []);
 
   useEffect(() => {
@@ -120,19 +105,15 @@ export default function KursiGenerator() {
           notes,
         }),
       );
-    } catch {
-      /* ignore */
-    }
+    } catch { /* ignore */ }
   }, [seats, disabledSeats, matkul, kelas, timer.duration, timer.remaining, notes]);
 
-  /* ── Timer tick ── */
+  // Timer tick
   useEffect(() => {
     if (timer.isRunning && timer.remaining > 0) {
       timerRef.current = window.setInterval(() => {
         setTimer((prev) => {
-          if (prev.remaining <= 1) {
-            return { ...prev, remaining: 0, isRunning: false };
-          }
+          if (prev.remaining <= 1) return { ...prev, remaining: 0, isRunning: false };
           return { ...prev, remaining: prev.remaining - 1 };
         });
       }, 1000);
@@ -145,8 +126,7 @@ export default function KursiGenerator() {
     };
   }, [timer.isRunning]);
 
-  /* ── Actions ── */
-
+  // Generate
   const handleGenerate = useCallback(() => {
     setIsLoading(true);
     setTimeout(() => {
@@ -161,12 +141,10 @@ export default function KursiGenerator() {
       }
       setSeats(newSeats);
       setIsLoading(false);
-    }, 600);
+    }, 500);
   }, [kelas, disabledSeats]);
 
-  const handleReset = useCallback(() => {
-    setSeats(makeEmptySeats());
-  }, []);
+  const handleReset = useCallback(() => setSeats(makeEmptySeats()), []);
 
   const toggleDisabledSeat = useCallback((seatNo: number) => {
     setDisabledSeats((prev) => {
@@ -176,20 +154,15 @@ export default function KursiGenerator() {
     });
   }, []);
 
-  /* ── Drag-and-drop ── */
-
-  const handleDragStart = useCallback((seatNo: number) => {
-    setDragSourceSeat(seatNo);
-  }, []);
+  // Drag-and-drop
+  const handleDragStart = useCallback((seatNo: number) => setDragSourceSeat(seatNo), []);
 
   const handleDragOver = useCallback((e: React.DragEvent, seatNo: number) => {
     e.preventDefault();
     setDragOverSeat(seatNo);
   }, []);
 
-  const handleDragLeave = useCallback(() => {
-    setDragOverSeat(null);
-  }, []);
+  const handleDragLeave = useCallback(() => setDragOverSeat(null), []);
 
   const handleDrop = useCallback(
     (targetSeatNo: number) => {
@@ -202,7 +175,6 @@ export default function KursiGenerator() {
         const next = [...prev];
         const srcIdx = dragSourceSeat - 1;
         const tgtIdx = targetSeatNo - 1;
-        // Swap students
         const temp = next[srcIdx].student;
         next[srcIdx] = { ...next[srcIdx], student: next[tgtIdx].student };
         next[tgtIdx] = { ...next[tgtIdx], student: temp };
@@ -219,53 +191,40 @@ export default function KursiGenerator() {
     setDragOverSeat(null);
   }, []);
 
-  /* ── Timer controls ── */
-
+  // Timer controls
   const startTimer = () => setTimer((p) => ({ ...p, isRunning: true }));
   const pauseTimer = () => setTimer((p) => ({ ...p, isRunning: false }));
-  const resetTimer = () =>
-    setTimer((p) => ({ ...p, remaining: p.duration * 60, isRunning: false }));
+  const resetTimer = () => setTimer((p) => ({ ...p, remaining: p.duration * 60, isRunning: false }));
   const setTimerDuration = (mins: number) =>
     setTimer((p) => ({ ...p, duration: mins, remaining: mins * 60, isRunning: false }));
 
-  /* ── Derived ── */
-
+  // Derived
   const kelasOptions = KELAS_MAP[matkul] || [];
   const assignedCount = seats.filter((s) => s.student !== null).length;
   const eligibleStudents = STUDENTS.filter((s) => s.kelas === kelas);
+  const activeSeatCount = TOTAL_SEATS - disabledSeats.size;
 
-  // Split into 5 columns
   const columns: SeatData[][] = [];
-  for (let c = 0; c < 5; c++) {
-    columns.push(seats.slice(c * 10, (c + 1) * 10));
-  }
+  for (let c = 0; c < 5; c++) columns.push(seats.slice(c * 10, (c + 1) * 10));
 
-  // Countdown SVG
   const circumference = 2 * Math.PI * 90;
   const timerRatio = timer.duration > 0 ? timer.remaining / (timer.duration * 60) : 1;
   const strokeOffset = circumference * (1 - timerRatio);
 
-  /* ── Render ── */
-
   return (
     <div className="app-container">
-      {/* Sidebar Toggle (mobile) */}
       <button
         className="sidebar-toggle"
         onClick={() => setShowSidebar(!showSidebar)}
-        title={showSidebar ? 'Sembunyikan panel' : 'Tampilkan panel'}
       >
         {showSidebar ? '✕' : '☰'}
       </button>
 
-      {/* ═══ Sidebar ═══ */}
+      {/* ── Sidebar ── */}
       <aside className={`sidebar ${showSidebar ? 'open' : 'closed'}`}>
-        <div className="sidebar-header">
-          <span className="sidebar-icon">⚙️</span>
-          <span>Pengaturan</span>
-        </div>
+        <div className="sidebar-header">Isi datanya:</div>
 
-        {/* Data */}
+        {/* Matkul & Kelas */}
         <div className="sidebar-section">
           <label className="sidebar-label">Matkul</label>
           <select
@@ -274,14 +233,11 @@ export default function KursiGenerator() {
             onChange={(e) => {
               const v = e.target.value;
               setMatkul(v);
-              const first = KELAS_MAP[v]?.[0]?.value || '';
-              setKelas(first);
+              setKelas(KELAS_MAP[v]?.[0]?.value || '');
             }}
           >
             {MATKUL_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
+              <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
 
@@ -292,17 +248,15 @@ export default function KursiGenerator() {
             onChange={(e) => setKelas(e.target.value)}
           >
             {kelasOptions.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
+              <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
         </div>
 
-        {/* Disabled Seats */}
+        {/* Disabled seats */}
         <div className="sidebar-section">
           <label className="sidebar-label">
-            Meja tidak tersedia
+            Pilih nomor meja yang tidak bisa digunakan:
             {disabledSeats.size > 0 && (
               <span className="badge badge-danger">{disabledSeats.size}</span>
             )}
@@ -313,7 +267,6 @@ export default function KursiGenerator() {
                 key={n}
                 className={`seat-toggle ${disabledSeats.has(n) ? 'disabled' : ''}`}
                 onClick={() => toggleDisabledSeat(n)}
-                title={`Meja ${n}`}
               >
                 {n}
               </button>
@@ -324,19 +277,19 @@ export default function KursiGenerator() {
         {/* Generate */}
         <div className="sidebar-section">
           <div className="sidebar-info">
-            {eligibleStudents.length} praktikan · {kelas}
+            {eligibleStudents.length} praktikan di {kelas}
           </div>
           <button className="btn btn-primary" onClick={handleGenerate} disabled={isLoading}>
-            🔀 Generate Acak
+            Generate Acak
           </button>
           <button className="btn btn-secondary" onClick={handleReset}>
-            🗑️ Reset
+            Reset
           </button>
         </div>
 
         {/* Timer */}
         <div className="sidebar-section">
-          <label className="sidebar-label">⏱️ Hitung Mundur</label>
+          <label className="sidebar-label">Hitung Mundur</label>
           <div className="timer-input-row">
             <input
               type="number"
@@ -350,23 +303,17 @@ export default function KursiGenerator() {
           </div>
           <div className="timer-controls">
             {!timer.isRunning ? (
-              <button className="btn btn-timer btn-start" onClick={startTimer}>
-                ▶ Mulai
-              </button>
+              <button className="btn btn-timer btn-start" onClick={startTimer}>Mulai</button>
             ) : (
-              <button className="btn btn-timer btn-pause" onClick={pauseTimer}>
-                ⏸ Jeda
-              </button>
+              <button className="btn btn-timer btn-pause" onClick={pauseTimer}>Jeda</button>
             )}
-            <button className="btn btn-timer btn-reset" onClick={resetTimer}>
-              ↺ Reset
-            </button>
+            <button className="btn btn-timer btn-reset" onClick={resetTimer}>Reset</button>
           </div>
         </div>
 
         {/* Notes editor */}
         <div className="sidebar-section">
-          <label className="sidebar-label">📝 Catatan & Kredensial</label>
+          <label className="sidebar-label">Catatan & Kredensial</label>
           <input
             type="text"
             className="sidebar-input"
@@ -398,30 +345,23 @@ export default function KursiGenerator() {
         </div>
       </aside>
 
-      {/* ═══ Main Content ═══ */}
+      {/* ── Main ── */}
       <main className="main-content">
-        {/* Header */}
         <header className="main-header">
-          <h1 className="main-title">
-            <span className="title-icon">🪑</span>
-            Generator Ganjil 25/26
-          </h1>
+          <h1 className="main-title">🪑 Generator Ganjil 25/26</h1>
           {assignedCount > 0 && (
-            <div className="assigned-badge">
-              {assignedCount} / {TOTAL_SEATS - disabledSeats.size} kursi terisi
-            </div>
+            <span className="main-subtitle">
+              {assignedCount}/{activeSeatCount} kursi terisi
+            </span>
           )}
         </header>
 
-        {/* Tabs */}
         <div className="tab-bar">
-          {(
-            [
-              ['seats', '🪑 Kursi'],
-              ['notes', '📋 Catatan'],
-              ['countdown', '⏱️ Hitung Mundur'],
-            ] as [TabId, string][]
-          ).map(([id, label]) => (
+          {([
+            ['seats', 'Kursi'],
+            ['notes', 'Catatan'],
+            ['countdown', 'Hitung Mundur'],
+          ] as [TabId, string][]).map(([id, label]) => (
             <button
               key={id}
               className={`tab ${activeTab === id ? 'active' : ''}`}
@@ -432,9 +372,9 @@ export default function KursiGenerator() {
           ))}
         </div>
 
-        {/* ─── Seats Tab ─── */}
+        {/* ─ Seats ─ */}
         {activeTab === 'seats' && (
-          <div className="seats-tab">
+          <div>
             <p className="result-label">Hasil:</p>
             <div className="seat-grid">
               {columns.map((column, colIdx) => (
@@ -460,9 +400,7 @@ export default function KursiGenerator() {
                           isDragOver && 'drag-over',
                           hasStudent ? 'occupied' : 'empty',
                           isLoading && 'skeleton',
-                        ]
-                          .filter(Boolean)
-                          .join(' ')}
+                        ].filter(Boolean).join(' ')}
                         draggable={hasStudent && !isDisabled && !isLoading}
                         onDragStart={() => handleDragStart(seat.seatNo)}
                         onDragOver={(e) => !isDisabled && handleDragOver(e, seat.seatNo)}
@@ -483,9 +421,7 @@ export default function KursiGenerator() {
                         <span className="cell-asprak">
                           {isLoading ? (
                             <span className="skeleton-bar short" />
-                          ) : isDisabled ? (
-                            ''
-                          ) : (
+                          ) : isDisabled ? '' : (
                             seat.student?.asprak || ''
                           )}
                         </span>
@@ -498,54 +434,52 @@ export default function KursiGenerator() {
           </div>
         )}
 
-        {/* ─── Notes Tab ─── */}
+        {/* ─ Notes ─ */}
         {activeTab === 'notes' && (
           <div className="notes-tab">
-            <div className="notes-card">
-              <h2 className="notes-title">🖥️ Kredensial Server</h2>
-              <div className="credentials-grid">
-                <div className="credential-item">
-                  <span className="credential-label">IP Address</span>
-                  <span className="credential-value">{notes.ip}</span>
-                </div>
-                <div className="credential-item">
-                  <span className="credential-label">Username</span>
-                  <span className="credential-value">{notes.username}</span>
-                </div>
-                <div className="credential-item">
-                  <span className="credential-label">Password</span>
-                  <span className="credential-value mono">{notes.password}</span>
-                </div>
-              </div>
+            <div className="notes-section">
+              <h2 className="notes-section-title">Kredensial Server</h2>
+              <table className="credentials-table">
+                <tbody>
+                  <tr>
+                    <td>IP Address</td>
+                    <td>{notes.ip}</td>
+                  </tr>
+                  <tr>
+                    <td>Username</td>
+                    <td>{notes.username}</td>
+                  </tr>
+                  <tr>
+                    <td>Password</td>
+                    <td>{notes.password}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-            <div className="notes-card">
-              <h2 className="notes-title">📋 Instruksi Modul</h2>
+            <div className="notes-section">
+              <h2 className="notes-section-title">Instruksi</h2>
               <pre className="notes-instructions">{notes.instructions}</pre>
             </div>
           </div>
         )}
 
-        {/* ─── Countdown Tab ─── */}
+        {/* ─ Countdown ─ */}
         {activeTab === 'countdown' && (
           <div className="countdown-tab">
             <div className={`countdown-display ${timer.remaining === 0 ? 'countdown-finished' : ''}`}>
               <div className="countdown-ring">
                 <svg viewBox="0 0 200 200" className="countdown-svg">
                   <circle
-                    cx="100"
-                    cy="100"
-                    r="90"
+                    cx="100" cy="100" r="90"
                     fill="none"
                     stroke="var(--border-light)"
-                    strokeWidth="5"
+                    strokeWidth="4"
                   />
                   <circle
-                    cx="100"
-                    cy="100"
-                    r="90"
+                    cx="100" cy="100" r="90"
                     fill="none"
                     stroke={timer.remaining <= 60 && timer.remaining > 0 ? 'var(--danger)' : 'var(--accent)'}
-                    strokeWidth="5"
+                    strokeWidth="4"
                     strokeLinecap="round"
                     strokeDasharray={circumference}
                     strokeDashoffset={strokeOffset}
@@ -555,11 +489,7 @@ export default function KursiGenerator() {
                 </svg>
                 <div className="countdown-time">{formatTime(timer.remaining)}</div>
                 <div className="countdown-label">
-                  {timer.isRunning
-                    ? 'Berjalan'
-                    : timer.remaining === 0
-                      ? 'Waktu Habis!'
-                      : 'Dijeda'}
+                  {timer.isRunning ? 'Berjalan' : timer.remaining === 0 ? 'Waktu Habis' : 'Dijeda'}
                 </div>
               </div>
             </div>
