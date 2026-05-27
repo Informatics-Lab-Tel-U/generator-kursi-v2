@@ -330,33 +330,37 @@
 
 /* ===== Tabs ===== */
 .tab-bar {
-  display: flex;
-  gap: 0;
-  border-bottom: 2px solid var(--border-light);
+  display: inline-flex;
+  gap: 4px;
+  background: var(--bg-row-even);
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
 }
 
 .tab {
-  padding: 8px 16px;
+  padding: 6px 16px;
   border: none;
+  border-radius: 6px;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   font-size: 13px;
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
-  transition: color 0.15s;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.tab:hover {
+.tab:hover:not(.active) {
   color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.5);
 }
 
 .tab.active {
+  background: var(--bg-card);
   color: var(--accent);
   font-weight: 600;
-  border-bottom-color: var(--accent);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* Removed Result Label */
