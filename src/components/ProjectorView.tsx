@@ -3,6 +3,7 @@ import type { SeatData, TimerState, Racer, ProjectorConfig } from './types';
 import { makeEmptySeats } from './utils';
 
 import SeatsTab from './SeatsTab';
+import NotesTab from './NotesTab';
 import CountdownTab from './CountdownTab';
 
 import './KursiGenerator.css'; 
@@ -20,74 +21,65 @@ export default function ProjectorView() {
   });
 
   useEffect(() => {
-    let channel: BroadcastChannel | null = null;
-    try {
-      channel = new BroadcastChannel('kursi-gen-sync');
-      channel.onmessage = (event) => {
-        const data = event.data;
-        if (data.seats) setSeats(data.seats);
-        if (data.disabledSeats) setDisabledSeats(new Set(data.disabledSeats));
-        if (data.timer) setTimer(data.timer);
-        if (data.racers) setRacers(data.racers);
-        if (data.notes) setNotes(data.notes);
-        if (data.projectorConfig) setProjectorConfig(data.projectorConfig);
-      };
-
-      channel.postMessage({ type: 'REQUEST_SYNC' });
-    } catch (e) {
-      console.warn("BroadcastChannel registration failed or context is sandboxed:", e);
-    }
-
-    return () => {
-      if (channel) channel.close();
+    const channel = new BroadcastChannel('kursi-gen-sync');
+    channel.onmessage = (event) => {
+      const data = event.data;
+      if (data.seats) setSeats(data.seats);
+      if (data.disabledSeats) setDisabledSeats(new Set(data.disabledSeats));
+      if (data.timer) setTimer(data.timer);
+      if (data.racers) setRacers(data.racers);
+      if (data.notes) setNotes(data.notes);
+      if (data.projectorConfig) setProjectorConfig(data.projectorConfig);
     };
+
+    channel.postMessage({ type: 'REQUEST_SYNC' });
+
+    return () => channel.close();
   }, []);
 
-  const showSeats = projectorConfig?.showSeats ?? true;
-  const showNotes = projectorConfig?.showNotes ?? false;
-  const showCountdown = projectorConfig?.showCountdown ?? false;
-
-  const activeCount = [showSeats, showNotes, showCountdown].filter(Boolean).length;
-  
-  const gridStyle: React.CSSProperties = {
-    display: 'grid',
-    gap: '24px',
-    height: '100vh',
-    padding: '24px',
-    boxSizing: 'border-box',
-    background: 'var(--bg-page)',
-  };
-
-  if (activeCount === 1) {
-    gridStyle.gridTemplateColumns = '1fr';
-  } else if (activeCount === 2) {
-    gridStyle.gridTemplateColumns = '1fr 1fr';
-  } else if (activeCount === 3) {
-    Object.assign(gridStyle, {
-      gridTemplateColumns: '3fr 2fr',
-      gridTemplateRows: '1fr 1fr',
-    });
-  }
-
-  const safeSeats = seats || [];
   const columns: SeatData[][] = [];
-  for (let c = 0; c < 5; c++) {
-    columns.push(safeSeats.slice(c * 10, (c + 1) * 10));
+  for (let c = 0; c < 5; c++) columns.push(seats.slice(c * 10, (c + 1) * 10));
+
+  const activeCount = [projectorConfig.showSeats, projectorConfig.showNotes, projectorConfig.showCountdown].filter(Boolean).length;
+  
+  let gridTemplateColumns = '1fr';
+  let gridTemplateRows = '1fr';
+
+  if (activeCount === 2) {
+    gridTemplateColumns = '1fr 1fr';
+  } else if (activeCount === 3) {
+    gridTemplateColumns = '3fr 2fr';
+    gridTemplateRows = '1fr 1fr';
   }
 
   return (
-    <div style={gridStyle}>
-      {showSeats && (
-        <div style={{ 
-          overflowY: 'auto', 
-          background: 'rgba(255,255,255,0.85)', 
-          padding: '24px', 
-          borderRadius: '16px', 
-          boxShadow: 'var(--shadow-md)',
-          gridRow: activeCount === 3 ? '1 / 3' : 'auto',
-          gridColumn: activeCount === 3 ? '1 / 2' : 'auto'
-        }}>
-          <h2 style={{marginTop: 0}}>Posisi Duduk</h2>
+    <div 
+      className="projector-grid"
+      style={{
+        display: 'grid',
+        gap: '16px',
+        height: '100vh',
+        padding: '16px',
+        boxSizing: 'border-box',
+        background: 'var(--bg-page)',
+        gridTemplateColumns,
+        gridTemplateRows,
+      }}
+    >
+      {projectorConfig.showSeats && (
+        <div 
+          className="projector-panel"
+          style={{ 
+            overflowY: 'auto', 
+            background: 'var(--bg-card)', 
+            padding: '20px', 
+            borderRadius: 'var(--radius-lg)', 
+            border: '1px solid var(--border)',
+            gridRow: activeCount === 3 ? '1 / 3' : 'auto',
+            gridColumn: activeCount === 3 ? '1 / 2' : 'auto'
+          }}
+        >
+          <h2 style={{ marginTop: 0, fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>💺 Posisi Duduk</h2>
           <SeatsTab 
             columns={columns}
             disabledSeats={disabledSeats}
@@ -103,38 +95,44 @@ export default function ProjectorView() {
         </div>
       )}
 
-      {showNotes && (
-        <div style={{ 
-          overflowY: 'auto', 
-          background: 'rgba(255,255,255,0.85)', 
-          padding: '24px', 
-          borderRadius: '16px', 
-          boxShadow: 'var(--shadow-md)',
-          gridRow: activeCount === 3 ? '1 / 2' : 'auto',
-          gridColumn: activeCount === 3 ? '2 / 3' : 'auto'
-        }}>
-          <h2 style={{marginTop: 0}}>Catatan Praktikum</h2>
-          <div 
-            className="tiptap" 
-            style={{ padding: 0, minHeight: 'auto', background: 'transparent' }} 
-            dangerouslySetInnerHTML={{ __html: notes || "" }} 
-          />
+      {projectorConfig.showNotes && (
+        <div 
+          className="projector-panel"
+          style={{ 
+            overflowY: 'auto', 
+            background: 'var(--bg-card)', 
+            padding: '20px', 
+            borderRadius: 'var(--radius-lg)', 
+            border: '1px solid var(--border)',
+            gridRow: activeCount === 3 ? '1 / 2' : 'auto',
+            gridColumn: activeCount === 3 ? '2 / 3' : 'auto'
+          }}
+        >
+          <h2 style={{ marginTop: 0, fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>📝 Catatan Praktikum</h2>
+          <NotesTab notes={notes} readOnly={true} />
         </div>
       )}
 
-      {showCountdown && (
-        <div style={{ 
-          overflowY: 'auto', 
-          display: 'flex', 
-          flexDirection: 'column', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          gridRow: activeCount === 3 ? '2 / 3' : 'auto',
-          gridColumn: activeCount === 3 ? '2 / 3' : 'auto'
-        }}>
+      {projectorConfig.showCountdown && (
+        <div 
+          className="projector-panel"
+          style={{ 
+            overflowY: 'auto', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            background: 'var(--bg-card)',
+            padding: '20px',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--border)',
+            gridRow: activeCount === 3 ? '2 / 3' : 'auto',
+            gridColumn: activeCount === 3 ? '2 / 3' : 'auto'
+          }}
+        >
           <CountdownTab 
-            timer={timer || { startTime: "08:00", endTime: "10:00", isRunning: false, startedAt: null }} 
-            racers={racers || []} 
+            timer={timer} 
+            racers={racers} 
             readOnly={true} 
           />
         </div>
@@ -142,7 +140,11 @@ export default function ProjectorView() {
       
       {activeCount === 0 && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
-          <h2>Mode Proyektor Menunggu...</h2>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>📺</div>
+            <h2 style={{ margin: 0, fontWeight: 600 }}>Mode Proyektor Menunggu...</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Aktifkan tampilan dari panel kontrol</p>
+          </div>
         </div>
       )}
     </div>

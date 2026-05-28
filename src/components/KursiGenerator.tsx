@@ -12,7 +12,28 @@ import CountdownTab from "./CountdownTab";
 
 const TOTAL_SEATS = 50;
 
+function useTheme() {
+    const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+        if (typeof window !== 'undefined') {
+            return (document.documentElement.getAttribute('data-theme') as 'light' | 'dark') || 'dark';
+        }
+        return 'dark';
+    });
+
+    const toggleTheme = useCallback(() => {
+        setTheme(prev => {
+            const next = prev === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('kursi-theme', next);
+            return next;
+        });
+    }, []);
+
+    return { theme, toggleTheme };
+}
+
 export default function KursiGenerator() {
+    const { theme, toggleTheme } = useTheme();
     const [matkul, setMatkul] = useState("ALPRO2");
     const [kelas, setKelas] = useState("IF-GABREM");
     const [seats, setSeats] = useState<SeatData[]>(makeEmptySeats(TOTAL_SEATS));
@@ -199,11 +220,18 @@ export default function KursiGenerator() {
     const columns: SeatData[][] = [];
     for (let c = 0; c < 5; c++) columns.push(seats.slice(c * 10, (c + 1) * 10));
 
+    const TAB_CONFIG: { id: TabId; label: string; icon: string }[] = [
+        { id: "seats", label: "Kursi", icon: "💺" },
+        { id: "notes", label: "Catatan", icon: "📝" },
+        { id: "countdown", label: "Hitung Mundur", icon: "⏱️" },
+    ];
+
     return (
         <div className="app-container">
             <button
                 className="sidebar-toggle"
                 onClick={() => setShowSidebar(!showSidebar)}
+                aria-label={showSidebar ? "Tutup sidebar" : "Buka sidebar"}
             >
                 {showSidebar ? "✕" : "☰"}
             </button>
@@ -235,10 +263,9 @@ export default function KursiGenerator() {
                             </span>
                         )}
             
-                        {/* Projector Options in Header */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginLeft: '24px', background: 'rgba(255,255,255,0.7)', padding: '6px 16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Proyektor:</span>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                        <div className="projector-bar">
+                            <span className="projector-bar-label">Proyektor:</span>
+                            <label>
                                 <input 
                                     type="checkbox" 
                                     checked={projectorConfig.showSeats} 
@@ -246,7 +273,7 @@ export default function KursiGenerator() {
                                 />
                                 Kursi
                             </label>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                            <label>
                                 <input 
                                     type="checkbox" 
                                     checked={projectorConfig.showNotes} 
@@ -254,7 +281,7 @@ export default function KursiGenerator() {
                                 />
                                 Catatan
                             </label>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                            <label>
                                 <input 
                                     type="checkbox" 
                                     checked={projectorConfig.showCountdown} 
@@ -266,33 +293,39 @@ export default function KursiGenerator() {
 
                         <button 
                           className="btn btn-secondary" 
-                          style={{ marginLeft: '16px', padding: '6px 12px', fontSize: '12px' }}
-                          onClick={() => window.open('/projector/', 'ProjectorWindow', 'width=1280,height=720,resizable=yes')}
+                          style={{ padding: '6px 12px', fontSize: '12px' }}
+                          onClick={() => window.open('/projector', 'ProjectorWindow', 'width=1280,height=720,menubar=no,toolbar=no,location=no,status=no,resizable=yes')}
                         >
                           📺 Buka
                         </button>
                     </div>
 
-                    <div className="tab-bar">
-                        {(
-                            [
-                                ["seats", "Kursi"],
-                                ["notes", "Catatan"],
-                                ["countdown", "Hitung Mundur"],
-                            ] as [TabId, string][]
-                        ).map(([id, label]) => (
-                            <button
-                                key={id}
-                                className={`tab ${activeTab === id ? "active" : ""}`}
-                                onClick={() => setActiveTab(id)}
-                            >
-                                {label}
-                            </button>
-                        ))}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div className="tab-bar">
+                            {TAB_CONFIG.map(({ id, label, icon }) => (
+                                <button
+                                    key={id}
+                                    className={`tab ${activeTab === id ? "active" : ""}`}
+                                    onClick={() => setActiveTab(id)}
+                                >
+                                    <span style={{ marginRight: '4px' }}>{icon}</span>
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button
+                            className="theme-toggle"
+                            onClick={toggleTheme}
+                            aria-label={theme === 'dark' ? 'Ganti ke tema terang' : 'Ganti ke tema gelap'}
+                            title={theme === 'dark' ? 'Tema Terang' : 'Tema Gelap'}
+                        >
+                            {theme === 'dark' ? '☀️' : '🌙'}
+                        </button>
                     </div>
                 </header>
 
-                <div style={{ display: activeTab === "seats" ? "block" : "none" }}>
+                {activeTab === "seats" && (
                     <SeatsTab
                         columns={columns}
                         disabledSeats={disabledSeats}
@@ -305,18 +338,18 @@ export default function KursiGenerator() {
                         handleDrop={handleDrop}
                         handleDragEnd={handleDragEnd}
                     />
-                </div>
-                <div style={{ display: activeTab === "notes" ? "block" : "none" }}>
+                )}
+                {activeTab === "notes" && (
                     <NotesTab notes={notes} setNotes={setNotes} />
-                </div>
-                <div style={{ display: activeTab === "countdown" ? "block" : "none" }}>
+                )}
+                {activeTab === "countdown" && (
                     <CountdownTab
                         timer={timer}
                         setTimer={setTimer}
                         racers={racers}
                         setRacers={setRacers}
                     />
-                </div>
+                )}
             </main>
         </div>
     );

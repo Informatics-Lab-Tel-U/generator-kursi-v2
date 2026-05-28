@@ -18,52 +18,22 @@ export default function CountdownTab({ timer, setTimer, racers, setRacers, readO
   useEffect(() => {
     let interval: number;
     if (timer.isRunning) {
-      // Auto-initialize jitter maps on projector (read-only) view if empty
-      if (Object.keys(jitterMapRef.current).length === 0 && racers.length > 0) {
-        const newJitter: Record<string, RacerJitter> = {};
-        racers.forEach((r, idx) => {
-          const finalOffset = idx === 0 ? 0 : -(idx * 3) - Math.random() * 3;
-          newJitter[r.id] = {
-            currentOffset: 0,
-            targetOffset: Math.random() * 20 - 10,
-            speed: 0.02 + Math.random() * 0.05,
-            finalOffset,
-          };
-        });
-        jitterMapRef.current = newJitter;
-      }
-
       interval = window.setInterval(() => {
         setNow(new Date());
         
         const jMap = jitterMapRef.current;
-        // Re-verify if racers were loaded dynamically
-        if (Object.keys(jMap).length === 0 && racers.length > 0) {
-          racers.forEach((r, idx) => {
-            const finalOffset = idx === 0 ? 0 : -(idx * 3) - Math.random() * 3;
-            jMap[r.id] = {
-              currentOffset: 0,
-              targetOffset: Math.random() * 20 - 10,
-              speed: 0.02 + Math.random() * 0.05,
-              finalOffset,
-            };
-          });
-        }
-
         Object.keys(jMap).forEach((id) => {
           const j = jMap[id];
-          if (j) {
-            j.currentOffset += (j.targetOffset - j.currentOffset) * j.speed;
-            if (Math.abs(j.targetOffset - j.currentOffset) < 1) {
-              j.targetOffset = Math.random() * 30 - 15;
-              j.speed = 0.02 + Math.random() * 0.04;
-            }
+          j.currentOffset += (j.targetOffset - j.currentOffset) * j.speed;
+          if (Math.abs(j.targetOffset - j.currentOffset) < 1) {
+            j.targetOffset = Math.random() * 30 - 15;
+            j.speed = 0.02 + Math.random() * 0.04;
           }
         });
       }, 50);
     }
     return () => clearInterval(interval);
-  }, [timer.isRunning, racers]);
+  }, [timer.isRunning]);
 
   const handleRacerImageUpload = useCallback((id: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -154,9 +124,21 @@ export default function CountdownTab({ timer, setTimer, racers, setRacers, readO
                 </div>
                 <div>
                     {!timer.isRunning ? (
-                        <button className="btn btn-timer btn-start" style={{ padding: "12px 24px", margin: 0, height: "45px" }} onClick={startRace}>Mulai</button>
+                        <button 
+                          className="btn btn-start" 
+                          style={{ padding: "12px 28px", height: "45px", fontSize: "14px" }} 
+                          onClick={startRace}
+                        >
+                          ▶ Mulai
+                        </button>
                     ) : (
-                        <button className="btn btn-timer btn-pause" style={{ padding: "12px 24px", margin: 0, height: "45px" }} onClick={() => setTimer && setTimer((p) => ({ ...p, isRunning: false, startedAt: null }))}>Hentikan</button>
+                        <button 
+                          className="btn btn-pause" 
+                          style={{ padding: "12px 28px", height: "45px", fontSize: "14px" }} 
+                          onClick={() => setTimer && setTimer((p) => ({ ...p, isRunning: false, startedAt: null }))}
+                        >
+                          ⏸ Hentikan
+                        </button>
                     )}
                 </div>
             </div>
@@ -164,10 +146,17 @@ export default function CountdownTab({ timer, setTimer, racers, setRacers, readO
 
           {!readOnly && !timer.isRunning && (
               <div className="racer-setup">
-                  <h3 style={{ margin: "0 0 16px 0", fontSize: "15px" }}>Daftar Pembalap (ASPRAK)</h3>
+                  <h3 style={{ margin: "0 0 16px 0", fontSize: "15px", fontWeight: 600 }}>🏎️ Daftar Pembalap (ASPRAK)</h3>
                   <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
-                      <input type="text" className="sidebar-input" placeholder="Kode ASPRAK (e.g. AFF)" value={newRacerName} onChange={(e) => setNewRacerName(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addRacer()} />
-                      <button className="btn btn-primary" onClick={addRacer}>Tambah</button>
+                      <input 
+                        type="text" 
+                        className="sidebar-input" 
+                        placeholder="Kode ASPRAK (e.g. AFF)" 
+                        value={newRacerName} 
+                        onChange={(e) => setNewRacerName(e.target.value)} 
+                        onKeyDown={(e) => e.key === "Enter" && addRacer()} 
+                      />
+                      <button className="btn btn-primary" onClick={addRacer}>+ Tambah</button>
                   </div>
                   <div className="racer-list">
                       {racers.map((r) => (
@@ -176,23 +165,34 @@ export default function CountdownTab({ timer, setTimer, racers, setRacers, readO
                                   {r.imageBase64 ? <img src={r.imageBase64} alt={r.name} /> : <span>{r.name}</span>}
                               </div>
                               <span className="racer-name">{r.name}</span>
-                              <label className="btn btn-secondary btn-sm" style={{ cursor: "pointer", margin: 0, padding: "4px 8px", fontSize: "12px" }}>
-                                  Ubah Foto
+                              <label className="btn btn-secondary" style={{ cursor: "pointer", margin: 0, padding: "6px 10px", fontSize: "12px" }}>
+                                  📷 Foto
                                   <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => handleRacerImageUpload(r.id, e)} />
                               </label>
-                              <button className="btn btn-danger btn-sm" style={{ padding: "4px 8px", fontSize: "12px", margin: 0 }} onClick={() => removeRacer(r.id)}>Hapus</button>
+                              <button 
+                                className="btn" 
+                                style={{ padding: "6px 10px", fontSize: "12px", margin: 0, background: 'var(--danger-surface)', color: 'var(--danger)' }} 
+                                onClick={() => removeRacer(r.id)}
+                              >
+                                ✕
+                              </button>
                           </div>
                       ))}
+                      {racers.length === 0 && (
+                        <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+                          Belum ada pembalap
+                        </div>
+                      )}
                   </div>
               </div>
           )}
 
           <div className="race-track-container">
               <div style={{ textAlign: "center", marginBottom: "24px" }}>
-                  <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase", letterSpacing: "0.1em" }}>Waktu Tersisa</div>
+                  <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>Waktu Tersisa</div>
                   <div className="countdown-time">{formatTimeWithMs(remainMs)}</div>
                   {timer.isRunning && timer.startedAt && (
-                      <div style={{ fontSize: "15px", fontWeight: 600, color: "var(--text-primary)", marginTop: "4px" }}>
+                      <div style={{ fontSize: "14px", fontWeight: 500, color: "var(--text-secondary)", marginTop: "8px" }}>
                           Selesai Pukul: {formatClockTime(new Date(timer.startedAt + totalSecs * 1000))}
                       </div>
                   )}
@@ -200,7 +200,7 @@ export default function CountdownTab({ timer, setTimer, racers, setRacers, readO
 
               <div className="race-track">
                   {racers.length === 0 ? (
-                      <div style={{ padding: "40px", textAlign: "center", color: "var(--text-muted)" }}>Belum ada pembalap. Tambahkan pembalap di atas.</div>
+                      <div style={{ padding: "40px", textAlign: "center", color: "var(--text-muted)", fontSize: "14px" }}>Belum ada pembalap. Tambahkan pembalap di atas.</div>
                   ) : (
                       racers.map((racer) => {
                           const j = jitterMapRef.current[racer.id];

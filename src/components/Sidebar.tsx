@@ -1,5 +1,6 @@
 import { MATKUL_OPTIONS, KELAS_MAP } from './mockData';
 import type { Student } from './mockData';
+import type { ProjectorConfig } from './types';
 
 interface SidebarProps {
   showSidebar: boolean;
@@ -14,6 +15,8 @@ interface SidebarProps {
   handleGenerate: () => void;
   handleReset: () => void;
   totalSeats: number;
+  projectorConfig: ProjectorConfig;
+  setProjectorConfig: React.Dispatch<React.SetStateAction<ProjectorConfig>>;
 }
 
 export default function Sidebar({
@@ -34,11 +37,14 @@ export default function Sidebar({
 
   return (
     <aside className={`sidebar ${showSidebar ? "open" : "closed"}`}>
-      <div className="sidebar-header">Isi datanya:</div>
+      <div className="sidebar-header">
+        <span style={{ fontSize: '16px', marginRight: '6px' }}>⚙️</span>
+        Konfigurasi
+      </div>
 
       {/* Matkul & Kelas */}
       <div className="sidebar-section">
-        <label className="sidebar-label">Matkul</label>
+        <label className="sidebar-label">📚 Mata Kuliah</label>
         <select
           className="sidebar-select"
           value={matkul}
@@ -55,7 +61,7 @@ export default function Sidebar({
           ))}
         </select>
 
-        <label className="sidebar-label">Kelas</label>
+        <label className="sidebar-label">🏫 Kelas</label>
         <select
           className="sidebar-select"
           value={kelas}
@@ -72,7 +78,7 @@ export default function Sidebar({
       {/* Disabled seats */}
       <div className="sidebar-section">
         <label className="sidebar-label">
-          Pilih nomor meja yang tidak bisa digunakan:
+          🚫 Meja tidak aktif
           {disabledSeats.size > 0 && (
             <span className="badge badge-danger">
               {disabledSeats.size}
@@ -98,25 +104,26 @@ export default function Sidebar({
       {/* Generate */}
       <div className="sidebar-section">
         <div className="sidebar-info">
-          {eligibleStudents.length} praktikan di {kelas}
+          {eligibleStudents.length} praktikan di <strong>{kelas}</strong>
         </div>
         <button
           className="btn btn-primary"
           onClick={handleGenerate}
           disabled={isLoading}
+          style={{ width: '100%' }}
         >
-          Generate Acak
+          {isLoading ? '⏳ Generating...' : '🎲 Generate Acak'}
         </button>
-        <button className="btn btn-secondary" onClick={handleReset}>
-          Reset
+        <button className="btn btn-secondary" onClick={handleReset} style={{ width: '100%' }}>
+          ↺ Reset
         </button>
       </div>
 
-      {/* Notes editor */}
+      {/* Notes info */}
       <div className="sidebar-section">
-        <label className="sidebar-label">Catatan</label>
+        <label className="sidebar-label">📝 Catatan</label>
         <div className="sidebar-info">
-          Catatan dapat diubah langsung melalui tab{" "}
+          Catatan dapat diubah melalui tab{" "}
           <strong>Catatan</strong>.
         </div>
       </div>

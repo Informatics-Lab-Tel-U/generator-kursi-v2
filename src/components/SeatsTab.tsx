@@ -14,6 +14,28 @@ interface SeatsTabProps {
   handleDragEnd: () => void;
 }
 
+// Color palette for asprak badges
+const ASPRAK_COLORS: Record<string, { bg: string; color: string }> = {};
+const COLOR_POOL = [
+  { bg: 'rgba(138,180,248,0.15)', color: '#8ab4f8' },
+  { bg: 'rgba(129,201,149,0.15)', color: '#81c995' },
+  { bg: 'rgba(253,214,99,0.15)', color: '#fdd663' },
+  { bg: 'rgba(242,139,130,0.15)', color: '#f28b82' },
+  { bg: 'rgba(197,138,249,0.15)', color: '#c58af9' },
+  { bg: 'rgba(252,167,112,0.15)', color: '#fca770' },
+  { bg: 'rgba(120,215,252,0.15)', color: '#78d7fc' },
+  { bg: 'rgba(255,138,186,0.15)', color: '#ff8aba' },
+];
+let colorIdx = 0;
+
+function getAsprakColor(asprak: string) {
+  if (!ASPRAK_COLORS[asprak]) {
+    ASPRAK_COLORS[asprak] = COLOR_POOL[colorIdx % COLOR_POOL.length];
+    colorIdx++;
+  }
+  return ASPRAK_COLORS[asprak];
+}
+
 export default function SeatsTab({
   columns,
   disabledSeats,
@@ -41,6 +63,9 @@ export default function SeatsTab({
               const isDragSource = dragSourceSeat === seat.seatNo;
               const isDragOver = dragOverSeat === seat.seatNo;
               const hasStudent = seat.student !== null;
+              const asprakColor = seat.student?.asprak
+                ? getAsprakColor(seat.student.asprak)
+                : null;
 
               return (
                 <div
@@ -79,8 +104,18 @@ export default function SeatsTab({
                       <span className="skeleton-bar short" />
                     ) : isDisabled ? (
                       <span className="disabled-label">—</span>
+                    ) : seat.student?.asprak ? (
+                      <span
+                        className="asprak-badge"
+                        style={{
+                          background: asprakColor?.bg,
+                          color: asprakColor?.color,
+                        }}
+                      >
+                        {seat.student.asprak}
+                      </span>
                     ) : (
-                      seat.student?.asprak || ""
+                      ""
                     )}
                   </span>
                 </div>
