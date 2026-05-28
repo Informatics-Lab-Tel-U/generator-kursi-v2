@@ -3,13 +3,14 @@ import TiptapEditor from './TiptapEditor';
 
 interface NotesTabProps {
   notes: string;
-  setNotes: (val: string) => void;
+  setNotes?: (val: string) => void;
+  readOnly?: boolean;
 }
 
-export default function NotesTab({ notes, setNotes }: NotesTabProps) {
+export default function NotesTab({ notes, setNotes, readOnly = false }: NotesTabProps) {
   return (
     <div className="notes-tab">
-      <TiptapEditor content={notes} onChange={setNotes} />
+      <TiptapEditor content={notes} onUpdate={setNotes} readOnly={readOnly} />
     </div>
   );
 }

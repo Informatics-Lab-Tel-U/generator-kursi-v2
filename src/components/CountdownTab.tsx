@@ -4,12 +4,13 @@ import { formatTimeWithMs, formatClockTime } from './utils';
 
 interface CountdownTabProps {
   timer: TimerState;
-  setTimer: React.Dispatch<React.SetStateAction<TimerState>>;
+  setTimer?: React.Dispatch<React.SetStateAction<TimerState>>;
   racers: Racer[];
-  setRacers: React.Dispatch<React.SetStateAction<Racer[]>>;
+  setRacers?: React.Dispatch<React.SetStateAction<Racer[]>>;
+  readOnly?: boolean;
 }
 
-export default function CountdownTab({ timer, setTimer, racers, setRacers }: CountdownTabProps) {
+export default function CountdownTab({ timer, setTimer, racers, setRacers, readOnly = false }: CountdownTabProps) {
   const [now, setNow] = useState(new Date());
   const jitterMapRef = useRef<Record<string, RacerJitter>>({});
   const [newRacerName, setNewRacerName] = useState("");
@@ -40,14 +41,14 @@ export default function CountdownTab({ timer, setTimer, racers, setRacers }: Cou
       const reader = new FileReader();
       reader.onload = (ev) => {
         const dataUrl = ev.target?.result as string;
-        setRacers((prev) => prev.map((r) => r.id === id ? { ...r, imageBase64: dataUrl } : r));
+        if (setRacers) setRacers((prev) => prev.map((r) => r.id === id ? { ...r, imageBase64: dataUrl } : r));
       };
       reader.readAsDataURL(file);
     }
   }, [setRacers]);
 
   const addRacer = useCallback(() => {
-    if (newRacerName.trim()) {
+    if (newRacerName.trim() && setRacers) {
       setRacers((prev) => [
         ...prev,
         { id: Date.now().toString(), name: newRacerName.trim(), imageBase64: null },
@@ -57,7 +58,7 @@ export default function CountdownTab({ timer, setTimer, racers, setRacers }: Cou
   }, [newRacerName, setRacers]);
 
   const removeRacer = useCallback((id: string) => {
-    setRacers((prev) => prev.filter((r) => r.id !== id));
+    if (setRacers) setRacers((prev) => prev.filter((r) => r.id !== id));
   }, [setRacers]);
 
   const startRace = useCallback(() => {
@@ -74,7 +75,7 @@ export default function CountdownTab({ timer, setTimer, racers, setRacers }: Cou
       };
     });
     jitterMapRef.current = newJitter;
-    setTimer((p) => ({ ...p, isRunning: true, startedAt: Date.now() }));
+    if (setTimer) setTimer((p) => ({ ...p, isRunning: true, startedAt: Date.now() }));
   }, [racers, setTimer]);
 
   const startD = new Date();
@@ -103,33 +104,35 @@ export default function CountdownTab({ timer, setTimer, racers, setRacers }: Cou
 
   return (
       <div className="countdown-tab">
-          <div className="countdown-config-card">
-              <div className="countdown-field">
-                  <label>Waktu Mulai</label>
-                  <input
-                      type="time"
-                      value={timer.startTime}
-                      onChange={(e) => setTimer((p) => ({ ...p, startTime: e.target.value }))}
-                  />
-              </div>
-              <div className="countdown-field">
-                  <label>Waktu Selesai</label>
-                  <input
-                      type="time"
-                      value={timer.endTime}
-                      onChange={(e) => setTimer((p) => ({ ...p, endTime: e.target.value }))}
-                  />
-              </div>
-              <div>
-                  {!timer.isRunning ? (
-                      <button className="btn btn-timer btn-start" style={{ padding: "12px 24px", margin: 0, height: "45px" }} onClick={startRace}>Mulai</button>
-                  ) : (
-                      <button className="btn btn-timer btn-pause" style={{ padding: "12px 24px", margin: 0, height: "45px" }} onClick={() => setTimer((p) => ({ ...p, isRunning: false, startedAt: null }))}>Hentikan</button>
-                  )}
-              </div>
-          </div>
+          {!readOnly && (
+            <div className="countdown-config-card">
+                <div className="countdown-field">
+                    <label>Waktu Mulai</label>
+                    <input
+                        type="time"
+                        value={timer.startTime}
+                        onChange={(e) => setTimer && setTimer((p) => ({ ...p, startTime: e.target.value }))}
+                    />
+                </div>
+                <div className="countdown-field">
+                    <label>Waktu Selesai</label>
+                    <input
+                        type="time"
+                        value={timer.endTime}
+                        onChange={(e) => setTimer && setTimer((p) => ({ ...p, endTime: e.target.value }))}
+                    />
+                </div>
+                <div>
+                    {!timer.isRunning ? (
+                        <button className="btn btn-timer btn-start" style={{ padding: "12px 24px", margin: 0, height: "45px" }} onClick={startRace}>Mulai</button>
+                    ) : (
+                        <button className="btn btn-timer btn-pause" style={{ padding: "12px 24px", margin: 0, height: "45px" }} onClick={() => setTimer && setTimer((p) => ({ ...p, isRunning: false, startedAt: null }))}>Hentikan</button>
+                    )}
+                </div>
+            </div>
+          )}
 
-          {!timer.isRunning && (
+          {!readOnly && !timer.isRunning && (
               <div className="racer-setup">
                   <h3 style={{ margin: "0 0 16px 0", fontSize: "15px" }}>Daftar Pembalap (ASPRAK)</h3>
                   <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>

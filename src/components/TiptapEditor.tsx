@@ -1,20 +1,29 @@
+import React, { useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import './TiptapEditor.css';
 
 interface Props {
   content: string;
-  onUpdate: (html: string) => void;
+  onUpdate?: (html: string) => void;
+  readOnly?: boolean;
 }
 
-export default function TiptapEditor({ content, onUpdate }: Props) {
+export default function TiptapEditor({ content, onUpdate, readOnly = false }: Props) {
   const editor = useEditor({
     extensions: [StarterKit],
     content,
+    editable: !readOnly,
     onUpdate: ({ editor }) => {
-      onUpdate(editor.getHTML());
+      if (onUpdate) onUpdate(editor.getHTML());
     },
   });
+
+  useEffect(() => {
+    if (editor && editor.getHTML() !== content) {
+      editor.commands.setContent(content);
+    }
+  }, [content, editor]);
 
   if (!editor) return null;
 
@@ -38,8 +47,9 @@ export default function TiptapEditor({ content, onUpdate }: Props) {
   );
 
   return (
-    <div className="tiptap-wrapper">
-      <div className="tiptap-toolbar">
+    <div className={`tiptap-wrapper ${readOnly ? 'readonly' : ''}`}>
+      {!readOnly && (
+        <div className="tiptap-toolbar">
         {btn('B', () => editor.chain().focus().toggleBold().run(), editor.isActive('bold'), { fontWeight: 700 })}
         {btn('I', () => editor.chain().focus().toggleItalic().run(), editor.isActive('italic'), { fontStyle: 'italic' })}
         {btn('S', () => editor.chain().focus().toggleStrike().run(), editor.isActive('strike'), { textDecoration: 'line-through' })}
@@ -58,6 +68,7 @@ export default function TiptapEditor({ content, onUpdate }: Props) {
         {btn('↶', () => editor.chain().focus().undo().run(), false)}
         {btn('↷', () => editor.chain().focus().redo().run(), false)}
       </div>
+      )}
       <EditorContent editor={editor} />
     </div>
   );

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { STUDENTS } from "./mockData";
 import "./KursiGenerator.css";
 
-import type { SeatData, TimerState, Racer, TabId } from "./types";
+import type { SeatData, TimerState, Racer, TabId, ProjectorConfig } from "./types";
 import { makeEmptySeats, fisherYatesShuffle } from "./utils";
 
 import Sidebar from "./Sidebar";
@@ -35,6 +35,12 @@ export default function KursiGenerator() {
         "<h2>Kredensial Server</h2><ul><li><strong>IP Address:</strong> 10.34.1.100</li><li><strong>Username:</strong> praktikan</li><li><strong>Password:</strong> <code>Prakt1k@n2025</code></li></ul><hr><h2>Instruksi</h2><p>Selamat mengerjakan Modul 3 — Linked List.</p><p>Waktu pengerjaan: 90 menit.</p><p>Dilarang menggunakan HP selama praktikum berlangsung.</p>",
     );
 
+    const [projectorConfig, setProjectorConfig] = useState<ProjectorConfig>({
+        showSeats: true,
+        showNotes: false,
+        showCountdown: false,
+    });
+
     // Persist / restore
     useEffect(() => {
         try {
@@ -49,6 +55,7 @@ export default function KursiGenerator() {
                     setTimer({ ...p.timer, isRunning: false, startedAt: null });
                 if (p.notes) setNotes(p.notes);
                 if (p.racers) setRacers(p.racers);
+                if (p.projectorConfig) setProjectorConfig(p.projectorConfig);
             }
         } catch {
             /* ignore */
@@ -67,6 +74,7 @@ export default function KursiGenerator() {
                     timer: { ...timer, isRunning: false, startedAt: null },
                     notes,
                     racers,
+                    projectorConfig,
                 }),
             );
         } catch {
@@ -81,7 +89,37 @@ export default function KursiGenerator() {
         timer.endTime,
         notes,
         racers,
+        projectorConfig,
     ]);
+
+    // Broadcast to Projector
+    useEffect(() => {
+        const channel = new BroadcastChannel("kursi-gen-sync");
+        channel.postMessage({
+            seats,
+            disabledSeats: Array.from(disabledSeats),
+            timer,
+            notes,
+            racers,
+            projectorConfig,
+        });
+
+        // Also respond to REQUEST_SYNC from newly opened projectors
+        channel.onmessage = (event) => {
+            if (event.data?.type === "REQUEST_SYNC") {
+                channel.postMessage({
+                    seats,
+                    disabledSeats: Array.from(disabledSeats),
+                    timer,
+                    notes,
+                    racers,
+                    projectorConfig,
+                });
+            }
+        };
+
+        return () => channel.close();
+    }, [seats, disabledSeats, timer, notes, racers, projectorConfig]);
 
     // Generate
     const handleGenerate = useCallback(() => {
@@ -183,6 +221,8 @@ export default function KursiGenerator() {
                 handleGenerate={handleGenerate}
                 handleReset={handleReset}
                 totalSeats={TOTAL_SEATS}
+                projectorConfig={projectorConfig}
+                setProjectorConfig={setProjectorConfig}
             />
 
             <main className="main-content">

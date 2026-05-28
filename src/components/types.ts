@@ -25,4 +25,10 @@ export interface RacerJitter {
   finalOffset: number;
 }
 
+export interface ProjectorConfig {
+  showSeats: boolean;
+  showNotes: boolean;
+  showCountdown: boolean;
+}
+
 export type TabId = 'seats' | 'notes' | 'countdown';
