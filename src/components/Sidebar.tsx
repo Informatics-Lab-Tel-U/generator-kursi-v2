@@ -1,6 +1,5 @@
 import { MATKUL_OPTIONS, KELAS_MAP } from './mockData';
 import type { Student } from './mockData';
-import type { ProjectorConfig } from './types';
 
 interface SidebarProps {
   showSidebar: boolean;
@@ -15,8 +14,6 @@ interface SidebarProps {
   handleGenerate: () => void;
   handleReset: () => void;
   totalSeats: number;
-  projectorConfig: ProjectorConfig;
-  setProjectorConfig: (config: ProjectorConfig | ((prev: ProjectorConfig) => ProjectorConfig)) => void;
 }
 
 export default function Sidebar({
@@ -32,8 +29,6 @@ export default function Sidebar({
   handleGenerate,
   handleReset,
   totalSeats,
-  projectorConfig,
-  setProjectorConfig,
 }: SidebarProps) {
   const kelasOptions = KELAS_MAP[matkul] || [];
 
@@ -126,42 +121,6 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* Projector Config */}
-      <div className="sidebar-section">
-        <label className="sidebar-label">Mode Proyektor</label>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '8px' }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-            <input 
-              type="checkbox" 
-              checked={projectorConfig.showSeats} 
-              onChange={(e) => setProjectorConfig(p => ({ ...p, showSeats: e.target.checked }))} 
-            />
-            Tampilkan Kursi
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-            <input 
-              type="checkbox" 
-              checked={projectorConfig.showNotes} 
-              onChange={(e) => setProjectorConfig(p => ({ ...p, showNotes: e.target.checked }))} 
-            />
-            Tampilkan Catatan
-          </label>
-          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px' }}>
-            <input 
-              type="checkbox" 
-              checked={projectorConfig.showCountdown} 
-              onChange={(e) => setProjectorConfig(p => ({ ...p, showCountdown: e.target.checked }))} 
-            />
-            Tampilkan Hitung Mundur
-          </label>
-        </div>
-        <button 
-          className="btn btn-secondary" 
-          onClick={() => window.open('/projector', '_blank')}
-        >
-          Buka Layar Proyektor
-        </button>
-      </div>
     </aside>
   );
 }

@@ -234,6 +234,43 @@ export default function KursiGenerator() {
                                 {assignedCount}/{activeSeatCount} kursi terisi
                             </span>
                         )}
+            
+                        {/* Projector Options in Header */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginLeft: '24px', background: 'rgba(255,255,255,0.7)', padding: '6px 16px', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>Proyektor:</span>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                                <input 
+                                    type="checkbox" 
+                                    checked={projectorConfig.showSeats} 
+                                    onChange={(e) => setProjectorConfig(p => ({ ...p, showSeats: e.target.checked }))} 
+                                />
+                                Kursi
+                            </label>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                                <input 
+                                    type="checkbox" 
+                                    checked={projectorConfig.showNotes} 
+                                    onChange={(e) => setProjectorConfig(p => ({ ...p, showNotes: e.target.checked }))} 
+                                />
+                                Catatan
+                            </label>
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                                <input 
+                                    type="checkbox" 
+                                    checked={projectorConfig.showCountdown} 
+                                    onChange={(e) => setProjectorConfig(p => ({ ...p, showCountdown: e.target.checked }))} 
+                                />
+                                Waktu
+                            </label>
+                        </div>
+
+                        <button 
+                          className="btn btn-secondary" 
+                          style={{ marginLeft: '16px', padding: '6px 12px', fontSize: '12px' }}
+                          onClick={() => window.open('/projector/', 'ProjectorWindow', 'width=1280,height=720,resizable=yes')}
+                        >
+                          📺 Buka
+                        </button>
                     </div>
 
                     <div className="tab-bar">
@@ -255,7 +292,7 @@ export default function KursiGenerator() {
                     </div>
                 </header>
 
-                {activeTab === "seats" && (
+                <div style={{ display: activeTab === "seats" ? "block" : "none" }}>
                     <SeatsTab
                         columns={columns}
                         disabledSeats={disabledSeats}
@@ -268,18 +305,18 @@ export default function KursiGenerator() {
                         handleDrop={handleDrop}
                         handleDragEnd={handleDragEnd}
                     />
-                )}
-                {activeTab === "notes" && (
+                </div>
+                <div style={{ display: activeTab === "notes" ? "block" : "none" }}>
                     <NotesTab notes={notes} setNotes={setNotes} />
-                )}
-                {activeTab === "countdown" && (
+                </div>
+                <div style={{ display: activeTab === "countdown" ? "block" : "none" }}>
                     <CountdownTab
                         timer={timer}
                         setTimer={setTimer}
                         racers={racers}
                         setRacers={setRacers}
                     />
-                )}
+                </div>
             </main>
         </div>
     );

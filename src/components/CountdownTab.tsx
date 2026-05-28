@@ -18,22 +18,52 @@ export default function CountdownTab({ timer, setTimer, racers, setRacers, readO
   useEffect(() => {
     let interval: number;
     if (timer.isRunning) {
+      // Auto-initialize jitter maps on projector (read-only) view if empty
+      if (Object.keys(jitterMapRef.current).length === 0 && racers.length > 0) {
+        const newJitter: Record<string, RacerJitter> = {};
+        racers.forEach((r, idx) => {
+          const finalOffset = idx === 0 ? 0 : -(idx * 3) - Math.random() * 3;
+          newJitter[r.id] = {
+            currentOffset: 0,
+            targetOffset: Math.random() * 20 - 10,
+            speed: 0.02 + Math.random() * 0.05,
+            finalOffset,
+          };
+        });
+        jitterMapRef.current = newJitter;
+      }
+
       interval = window.setInterval(() => {
         setNow(new Date());
         
         const jMap = jitterMapRef.current;
+        // Re-verify if racers were loaded dynamically
+        if (Object.keys(jMap).length === 0 && racers.length > 0) {
+          racers.forEach((r, idx) => {
+            const finalOffset = idx === 0 ? 0 : -(idx * 3) - Math.random() * 3;
+            jMap[r.id] = {
+              currentOffset: 0,
+              targetOffset: Math.random() * 20 - 10,
+              speed: 0.02 + Math.random() * 0.05,
+              finalOffset,
+            };
+          });
+        }
+
         Object.keys(jMap).forEach((id) => {
           const j = jMap[id];
-          j.currentOffset += (j.targetOffset - j.currentOffset) * j.speed;
-          if (Math.abs(j.targetOffset - j.currentOffset) < 1) {
-            j.targetOffset = Math.random() * 30 - 15;
-            j.speed = 0.02 + Math.random() * 0.04;
+          if (j) {
+            j.currentOffset += (j.targetOffset - j.currentOffset) * j.speed;
+            if (Math.abs(j.targetOffset - j.currentOffset) < 1) {
+              j.targetOffset = Math.random() * 30 - 15;
+              j.speed = 0.02 + Math.random() * 0.04;
+            }
           }
         });
       }, 50);
     }
     return () => clearInterval(interval);
-  }, [timer.isRunning]);
+  }, [timer.isRunning, racers]);
 
   const handleRacerImageUpload = useCallback((id: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
