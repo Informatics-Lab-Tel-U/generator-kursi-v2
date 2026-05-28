@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { TimerState, Racer, RacerJitter } from './types';
 import { formatTimeWithMs, formatClockTime } from './utils';
+import { LuPlay, LuPause, LuCar, LuCamera } from 'react-icons/lu';
 
 interface CountdownTabProps {
   timer: TimerState;
@@ -103,7 +104,7 @@ export default function CountdownTab({ timer, setTimer, racers, setRacers, readO
   const timerRatio = Math.max(0, Math.min(1, remainMs / (totalSecs * 1000)));
 
   return (
-      <div className="countdown-tab">
+      <div className="countdown-tab" style={{ width: '100%' }}>
           {!readOnly && (
             <div className="countdown-config-card">
                 <div className="countdown-field">
@@ -126,18 +127,18 @@ export default function CountdownTab({ timer, setTimer, racers, setRacers, readO
                     {!timer.isRunning ? (
                         <button 
                           className="btn btn-start" 
-                          style={{ padding: "12px 28px", height: "45px", fontSize: "14px" }} 
+                          style={{ padding: "12px 28px", height: "45px", fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }} 
                           onClick={startRace}
                         >
-                          ▶ Mulai
+                          <LuPlay /> Mulai
                         </button>
                     ) : (
                         <button 
                           className="btn btn-pause" 
-                          style={{ padding: "12px 28px", height: "45px", fontSize: "14px" }} 
+                          style={{ padding: "12px 28px", height: "45px", fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }} 
                           onClick={() => setTimer && setTimer((p) => ({ ...p, isRunning: false, startedAt: null }))}
                         >
-                          ⏸ Hentikan
+                          <LuPause /> Hentikan
                         </button>
                     )}
                 </div>
@@ -146,7 +147,9 @@ export default function CountdownTab({ timer, setTimer, racers, setRacers, readO
 
           {!readOnly && !timer.isRunning && (
               <div className="racer-setup">
-                  <h3 style={{ margin: "0 0 16px 0", fontSize: "15px", fontWeight: 600 }}>🏎️ Daftar Pembalap (ASPRAK)</h3>
+                  <h3 style={{ margin: "0 0 16px 0", fontSize: "15px", fontWeight: 600, display: "flex", alignItems: "center", gap: "6px" }}>
+                    <LuCar /> Daftar Pembalap (ASPRAK)
+                  </h3>
                   <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
                       <input 
                         type="text" 
@@ -165,8 +168,8 @@ export default function CountdownTab({ timer, setTimer, racers, setRacers, readO
                                   {r.imageBase64 ? <img src={r.imageBase64} alt={r.name} /> : <span>{r.name}</span>}
                               </div>
                               <span className="racer-name">{r.name}</span>
-                              <label className="btn btn-secondary" style={{ cursor: "pointer", margin: 0, padding: "6px 10px", fontSize: "12px" }}>
-                                  📷 Foto
+                              <label className="btn btn-secondary" style={{ cursor: "pointer", margin: 0, padding: "6px 10px", fontSize: "12px", display: "flex", alignItems: "center", gap: "4px" }}>
+                                  <LuCamera /> Foto
                                   <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => handleRacerImageUpload(r.id, e)} />
                               </label>
                               <button 

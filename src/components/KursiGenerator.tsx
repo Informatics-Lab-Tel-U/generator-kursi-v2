@@ -9,6 +9,7 @@ import Sidebar from "./Sidebar";
 import SeatsTab from "./SeatsTab";
 import NotesTab from "./NotesTab";
 import CountdownTab from "./CountdownTab";
+import { LuLayoutGrid, LuFileText, LuTimer, LuMonitor, LuSun, LuMoon } from 'react-icons/lu';
 
 const TOTAL_SEATS = 50;
 
@@ -220,10 +221,10 @@ export default function KursiGenerator() {
     const columns: SeatData[][] = [];
     for (let c = 0; c < 5; c++) columns.push(seats.slice(c * 10, (c + 1) * 10));
 
-    const TAB_CONFIG: { id: TabId; label: string; icon: string }[] = [
-        { id: "seats", label: "Kursi", icon: "💺" },
-        { id: "notes", label: "Catatan", icon: "📝" },
-        { id: "countdown", label: "Hitung Mundur", icon: "⏱️" },
+    const TAB_CONFIG: { id: TabId; label: string; icon: React.ReactNode }[] = [
+        { id: "seats", label: "Kursi", icon: <LuLayoutGrid /> },
+        { id: "notes", label: "Catatan", icon: <LuFileText /> },
+        { id: "countdown", label: "Hitung Mundur", icon: <LuTimer /> },
     ];
 
     return (
@@ -255,73 +256,76 @@ export default function KursiGenerator() {
 
             <main className="main-content">
                 <header className="main-header">
-                    <div className="header-left">
-                        <h1 className="main-title">Generator Ganjil 25/26</h1>
-                        {assignedCount > 0 && (
-                            <span className="main-subtitle">
+                    <div className="header-top-row">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                            <h1 className="main-title">Generator {matkul} {kelas}</h1>
+                            <div className="main-subtitle">
                                 {assignedCount}/{activeSeatCount} kursi terisi
-                            </span>
-                        )}
-            
-                        <div className="projector-bar">
-                            <span className="projector-bar-label">Proyektor:</span>
-                            <label>
-                                <input 
-                                    type="checkbox" 
-                                    checked={projectorConfig.showSeats} 
-                                    onChange={(e) => setProjectorConfig(p => ({ ...p, showSeats: e.target.checked }))} 
-                                />
-                                Kursi
-                            </label>
-                            <label>
-                                <input 
-                                    type="checkbox" 
-                                    checked={projectorConfig.showNotes} 
-                                    onChange={(e) => setProjectorConfig(p => ({ ...p, showNotes: e.target.checked }))} 
-                                />
-                                Catatan
-                            </label>
-                            <label>
-                                <input 
-                                    type="checkbox" 
-                                    checked={projectorConfig.showCountdown} 
-                                    onChange={(e) => setProjectorConfig(p => ({ ...p, showCountdown: e.target.checked }))} 
-                                />
-                                Waktu
-                            </label>
+                            </div>
                         </div>
-
-                        <button 
-                          className="btn btn-secondary" 
-                          style={{ padding: '6px 12px', fontSize: '12px' }}
-                          onClick={() => window.open('/projector', 'ProjectorWindow', 'width=1280,height=720,menubar=no,toolbar=no,location=no,status=no,resizable=yes')}
-                        >
-                          📺 Buka
-                        </button>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div className="tab-bar">
-                            {TAB_CONFIG.map(({ id, label, icon }) => (
-                                <button
-                                    key={id}
-                                    className={`tab ${activeTab === id ? "active" : ""}`}
-                                    onClick={() => setActiveTab(id)}
-                                >
-                                    <span style={{ marginRight: '4px' }}>{icon}</span>
-                                    {label}
-                                </button>
-                            ))}
-                        </div>
-
                         <button
                             className="theme-toggle"
                             onClick={toggleTheme}
                             aria-label={theme === 'dark' ? 'Ganti ke tema terang' : 'Ganti ke tema gelap'}
                             title={theme === 'dark' ? 'Tema Terang' : 'Tema Gelap'}
                         >
-                            {theme === 'dark' ? '☀️' : '🌙'}
+                            {theme === 'dark' ? <LuSun /> : <LuMoon />}
                         </button>
+                    </div>
+
+                    <div className="header-bottom-row">
+                        <div className="tab-bar">
+                            {TAB_CONFIG.map(({ id, label, icon }) => (
+                                <button
+                                    key={id}
+                                    className={`tab ${activeTab === id ? "active" : ""}`}
+                                    onClick={() => setActiveTab(id)}
+                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                                >
+                                    {icon}
+                                    <span>{label}</span>
+                                </button>
+                            ))}
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                            <div className="projector-bar">
+                                <span className="projector-bar-label">Proyektor:</span>
+                                <label>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={projectorConfig.showSeats} 
+                                        onChange={(e) => setProjectorConfig(p => ({ ...p, showSeats: e.target.checked }))} 
+                                    />
+                                    Kursi
+                                </label>
+                                <label>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={projectorConfig.showNotes} 
+                                        onChange={(e) => setProjectorConfig(p => ({ ...p, showNotes: e.target.checked }))} 
+                                    />
+                                    Catatan
+                                </label>
+                                <label>
+                                    <input 
+                                        type="checkbox" 
+                                        checked={projectorConfig.showCountdown} 
+                                        onChange={(e) => setProjectorConfig(p => ({ ...p, showCountdown: e.target.checked }))} 
+                                    />
+                                    Waktu
+                                </label>
+                            </div>
+
+                            <button 
+                              className="btn btn-secondary" 
+                              style={{ padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                              onClick={() => window.open('/projector', 'ProjectorWindow', 'width=1280,height=720,menubar=no,toolbar=no,location=no,status=no,resizable=yes')}
+                            >
+                              <LuMonitor />
+                              Buka
+                            </button>
+                        </div>
                     </div>
                 </header>
 

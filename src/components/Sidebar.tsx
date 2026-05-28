@@ -1,6 +1,7 @@
 import { MATKUL_OPTIONS, KELAS_MAP } from './mockData';
 import type { Student } from './mockData';
 import type { ProjectorConfig } from './types';
+import { LuSettings, LuBook, LuUsers, LuBan, LuDices, LuRotateCcw, LuFileText, LuLoader } from 'react-icons/lu';
 
 interface SidebarProps {
   showSidebar: boolean;
@@ -38,13 +39,15 @@ export default function Sidebar({
   return (
     <aside className={`sidebar ${showSidebar ? "open" : "closed"}`}>
       <div className="sidebar-header">
-        <span style={{ fontSize: '16px', marginRight: '6px' }}>⚙️</span>
+        <LuSettings style={{ fontSize: '16px', marginRight: '6px' }} />
         Konfigurasi
       </div>
 
       {/* Matkul & Kelas */}
       <div className="sidebar-section">
-        <label className="sidebar-label">📚 Mata Kuliah</label>
+        <label className="sidebar-label">
+          <LuBook style={{ marginRight: '6px' }} /> Mata Kuliah
+        </label>
         <select
           className="sidebar-select"
           value={matkul}
@@ -61,7 +64,9 @@ export default function Sidebar({
           ))}
         </select>
 
-        <label className="sidebar-label">🏫 Kelas</label>
+        <label className="sidebar-label">
+          <LuUsers style={{ marginRight: '6px' }} /> Kelas
+        </label>
         <select
           className="sidebar-select"
           value={kelas}
@@ -78,7 +83,7 @@ export default function Sidebar({
       {/* Disabled seats */}
       <div className="sidebar-section">
         <label className="sidebar-label">
-          🚫 Meja tidak aktif
+          <LuBan style={{ marginRight: '6px' }} /> Meja tidak aktif
           {disabledSeats.size > 0 && (
             <span className="badge badge-danger">
               {disabledSeats.size}
@@ -110,18 +115,28 @@ export default function Sidebar({
           className="btn btn-primary"
           onClick={handleGenerate}
           disabled={isLoading}
-          style={{ width: '100%' }}
+          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
         >
-          {isLoading ? '⏳ Generating...' : '🎲 Generate Acak'}
+          {isLoading ? (
+            <><LuLoader className="animate-spin" /> Generating...</>
+          ) : (
+            <><LuDices /> Generate Acak</>
+          )}
         </button>
-        <button className="btn btn-secondary" onClick={handleReset} style={{ width: '100%' }}>
-          ↺ Reset
+        <button 
+          className="btn btn-secondary" 
+          onClick={handleReset} 
+          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+        >
+          <LuRotateCcw /> Reset
         </button>
       </div>
 
       {/* Notes info */}
       <div className="sidebar-section">
-        <label className="sidebar-label">📝 Catatan</label>
+        <label className="sidebar-label">
+          <LuFileText style={{ marginRight: '6px' }} /> Catatan
+        </label>
         <div className="sidebar-info">
           Catatan dapat diubah melalui tab{" "}
           <strong>Catatan</strong>.
