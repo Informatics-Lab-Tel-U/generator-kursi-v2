@@ -47,8 +47,7 @@
 
 .sidebar-toggle {
     position: fixed;
-    bottom: 24px;
-    left: 24px;
+    top: 24px;
     z-index: 100;
     width: 44px;
     height: 44px;
@@ -60,9 +59,17 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
     color: var(--text-primary);
-    transition: all var(--transition-fast);
+    font-size: 18px;
+    transition: all 0.3s ease;
+}
+
+.sidebar-toggle.open {
+    left: calc(260px + 24px);
+}
+
+.sidebar-toggle.closed {
+    left: 24px;
 }
 
 .sidebar-toggle:hover {

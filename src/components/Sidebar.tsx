@@ -1,14 +1,15 @@
-import { MATKUL_OPTIONS, KELAS_MAP } from './mockData';
-import type { Student } from './mockData';
-import type { ProjectorConfig } from './types';
-import { LuSettings, LuBook, LuUsers, LuBan, LuDices, LuRotateCcw, LuFileText, LuLoader } from 'react-icons/lu';
+import type { Student, ProjectorConfig } from './types';
+import { LuSettings, LuBook, LuUsers, LuBan, LuDices, LuRotateCcw, LuFileText, LuLoader, LuPanelLeftClose } from 'react-icons/lu';
 
 interface SidebarProps {
   showSidebar: boolean;
+  setShowSidebar: (val: boolean) => void;
   matkul: string;
   setMatkul: (val: string) => void;
   kelas: string;
   setKelas: (val: string) => void;
+  matkulOptions: {value: string, label: string}[];
+  kelasMap: Record<string, {value: string, label: string}[]>;
   disabledSeats: Set<number>;
   toggleDisabledSeat: (seatNo: number) => void;
   eligibleStudents: Student[];
@@ -22,10 +23,13 @@ interface SidebarProps {
 
 export default function Sidebar({
   showSidebar,
+  setShowSidebar,
   matkul,
   setMatkul,
   kelas,
   setKelas,
+  matkulOptions,
+  kelasMap,
   disabledSeats,
   toggleDisabledSeat,
   eligibleStudents,
@@ -34,13 +38,33 @@ export default function Sidebar({
   handleReset,
   totalSeats,
 }: SidebarProps) {
-  const kelasOptions = KELAS_MAP[matkul] || [];
+  const kelasOptions = kelasMap[matkul] || [];
 
   return (
     <aside className={`sidebar ${showSidebar ? "open" : "closed"}`}>
-      <div className="sidebar-header">
-        <LuSettings style={{ fontSize: '16px', marginRight: '6px' }} />
-        Konfigurasi
+      <div className="sidebar-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+            <LuSettings style={{ fontSize: '16px', marginRight: '6px' }} />
+            Konfigurasi
+        </div>
+        <button 
+            onClick={() => setShowSidebar(false)}
+            style={{ 
+                background: 'transparent', 
+                border: 'none', 
+                color: 'var(--text-secondary)', 
+                cursor: 'pointer', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                padding: '4px',
+                borderRadius: '4px'
+            }}
+            aria-label="Tutup sidebar"
+            title="Tutup sidebar"
+        >
+            <LuPanelLeftClose style={{ fontSize: '18px' }} />
+        </button>
       </div>
 
       {/* Matkul & Kelas */}
@@ -54,10 +78,11 @@ export default function Sidebar({
           onChange={(e) => {
             const v = e.target.value;
             setMatkul(v);
-            setKelas(KELAS_MAP[v]?.[0]?.value || "");
+            setKelas(""); // Reset kelas so user must explicitly pick again
           }}
         >
-          {MATKUL_OPTIONS.map((o) => (
+          <option value="" disabled>-- Pilih Mata Kuliah --</option>
+          {matkulOptions.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
             </option>
@@ -71,7 +96,9 @@ export default function Sidebar({
           className="sidebar-select"
           value={kelas}
           onChange={(e) => setKelas(e.target.value)}
+          disabled={!matkul}
         >
+          <option value="" disabled>-- Pilih Kelas --</option>
           {kelasOptions.map((o) => (
             <option key={o.value} value={o.value}>
               {o.label}
@@ -114,7 +141,7 @@ export default function Sidebar({
         <button
           className="btn btn-primary"
           onClick={handleGenerate}
-          disabled={isLoading}
+          disabled={!matkul || !kelas || eligibleStudents.length === 0 || isLoading}
           style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
         >
           {isLoading ? (

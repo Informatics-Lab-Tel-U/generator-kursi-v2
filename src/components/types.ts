@@ -1,4 +1,9 @@
-import type { Student } from './mockData';
+export interface Student {
+  id: string;
+  name: string;
+  kelas: string;
+  asprak: string;
+}
 
 export interface SeatData {
   seatNo: number;

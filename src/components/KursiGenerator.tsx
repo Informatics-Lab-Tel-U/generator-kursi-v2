@@ -1,31 +1,49 @@
 import { useState, useEffect, useCallback } from "react";
-import { STUDENTS } from "./mockData";
+import type { Student } from "./types";
 import "./KursiGenerator.css";
 
-import type { SeatData, TimerState, Racer, TabId, ProjectorConfig } from "./types";
+import type {
+    SeatData,
+    TimerState,
+    Racer,
+    TabId,
+    ProjectorConfig,
+} from "./types";
 import { makeEmptySeats, fisherYatesShuffle } from "./utils";
 
 import Sidebar from "./Sidebar";
 import SeatsTab from "./SeatsTab";
 import NotesTab from "./NotesTab";
 import CountdownTab from "./CountdownTab";
-import { LuLayoutGrid, LuFileText, LuTimer, LuMonitor, LuSun, LuMoon } from 'react-icons/lu';
+import {
+    LuLayoutGrid,
+    LuFileText,
+    LuTimer,
+    LuMonitor,
+    LuSun,
+    LuMoon,
+    LuPanelLeftOpen,
+} from "react-icons/lu";
 
 const TOTAL_SEATS = 50;
 
 function useTheme() {
-    const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-        if (typeof window !== 'undefined') {
-            return (document.documentElement.getAttribute('data-theme') as 'light' | 'dark') || 'dark';
+    const [theme, setTheme] = useState<"light" | "dark">(() => {
+        if (typeof window !== "undefined") {
+            return (
+                (document.documentElement.getAttribute("data-theme") as
+                    | "light"
+                    | "dark") || "dark"
+            );
         }
-        return 'dark';
+        return "dark";
     });
 
     const toggleTheme = useCallback(() => {
-        setTheme(prev => {
-            const next = prev === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', next);
-            localStorage.setItem('kursi-theme', next);
+        setTheme((prev) => {
+            const next = prev === "dark" ? "light" : "dark";
+            document.documentElement.setAttribute("data-theme", next);
+            localStorage.setItem("kursi-theme", next);
             return next;
         });
     }, []);
@@ -35,13 +53,114 @@ function useTheme() {
 
 export default function KursiGenerator() {
     const { theme, toggleTheme } = useTheme();
-    const [matkul, setMatkul] = useState("ALPRO2");
-    const [kelas, setKelas] = useState("IF-GABREM");
+    const [matkul, setMatkul] = useState("");
+    const [kelas, setKelas] = useState("");
     const [seats, setSeats] = useState<SeatData[]>(makeEmptySeats(TOTAL_SEATS));
     const [disabledSeats, setDisabledSeats] = useState<Set<number>>(new Set());
     const [activeTab, setActiveTab] = useState<TabId>("seats");
     const [isLoading, setIsLoading] = useState(false);
     const [showSidebar, setShowSidebar] = useState(true);
+
+    // API State
+    const [matkulOptions, setMatkulOptions] = useState<
+        { value: string; label: string }[]
+    >([]);
+    const [kelasMap, setKelasMap] = useState<
+        Record<string, { value: string; label: string }[]>
+    >({});
+    const [eligibleStudents, setEligibleStudents] = useState<Student[]>([]);
+
+    useEffect(() => {
+        const fetchOptions = async () => {
+            try {
+                const apiKey =
+                    import.meta.env.PUBLIC_PRAKTIKAN_GET_API_KEY || "";
+                const res = await fetch(
+                    "http://localhost:3001/api/praktikan?action=options",
+                    {
+                        headers: {
+                            "x-praktikan-api-key": apiKey,
+                            origin: "localhost:4321",
+                        },
+                    },
+                );
+                const data = await res.json();
+
+                let parsedMatkul: { value: string; label: string }[] = [];
+                let parsedKelas: Record<
+                    string,
+                    { value: string; label: string }[]
+                > = {};
+
+                if (data && data.ok && data.data) {
+                    const mkList = (data.data.mata_kuliah || []).map((m: string) => ({ value: m, label: m }));
+                    const klsList = (data.data.kelas || []).map((k: string) => ({ value: k, label: k }));
+                    
+                    parsedMatkul = mkList;
+                    
+                    mkList.forEach((m: {value: string}) => {
+                        parsedKelas[m.value] = klsList;
+                    });
+                }
+
+                setMatkulOptions(parsedMatkul);
+                setKelasMap(parsedKelas);
+            } catch (e) {
+                console.error("Failed to fetch options:", e);
+            }
+        };
+        fetchOptions();
+    }, []);
+
+    useEffect(() => {
+        if (!matkul || !kelas) return;
+
+        const fetchStudents = async () => {
+            setIsLoading(true);
+            try {
+                const apiKey =
+                    import.meta.env.PUBLIC_PRAKTIKAN_GET_API_KEY || "";
+                const url = `http://localhost:3001/api/praktikan?kelas=${encodeURIComponent(kelas)}&mata_kuliah=${encodeURIComponent(matkul)}`;
+                const res = await fetch(url, {
+                    headers: {
+                        "x-praktikan-api-key": apiKey,
+                    },
+                });
+                const data = await res.json();
+
+                let students: Student[] = [];
+                const payload = data.data || data;
+
+                if (Array.isArray(payload)) {
+                    students = payload.map((s: any) => ({
+                        id: s.id ? String(s.id) : `stu-${Math.random()}`,
+                        name: s.nama || "Unknown",
+                        kelas: s.kelas || kelas,
+                        asprak: s.kode_asprak || "N/A",
+                    }));
+                }
+
+                setEligibleStudents(students);
+                
+                // Auto generate immediately
+                const shuffled = fisherYatesShuffle(students);
+                const newSeats = makeEmptySeats(TOTAL_SEATS);
+                let idx = 0;
+                for (let i = 0; i < TOTAL_SEATS; i++) {
+                    if (!disabledSeats.has(i + 1) && idx < shuffled.length) {
+                        newSeats[i].student = shuffled[idx++];
+                    }
+                }
+                setSeats(newSeats);
+            } catch (e) {
+                console.error("Failed to fetch students:", e);
+                setEligibleStudents([]);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchStudents();
+    }, [matkul, kelas]);
     const [dragSourceSeat, setDragSourceSeat] = useState<number | null>(null);
     const [dragOverSeat, setDragOverSeat] = useState<number | null>(null);
 
@@ -147,7 +266,7 @@ export default function KursiGenerator() {
     const handleGenerate = useCallback(() => {
         setIsLoading(true);
         setTimeout(() => {
-            const filtered = STUDENTS.filter((s) => s.kelas === kelas);
+            const filtered = eligibleStudents;
             const shuffled = fisherYatesShuffle(filtered);
             const newSeats = makeEmptySeats(TOTAL_SEATS);
             let idx = 0;
@@ -159,7 +278,7 @@ export default function KursiGenerator() {
             setSeats(newSeats);
             setIsLoading(false);
         }, 500);
-    }, [kelas, disabledSeats]);
+    }, [eligibleStudents, disabledSeats]);
 
     const handleReset = useCallback(
         () => setSeats(makeEmptySeats(TOTAL_SEATS)),
@@ -215,7 +334,6 @@ export default function KursiGenerator() {
     }, []);
 
     const assignedCount = seats.filter((s) => s.student !== null).length;
-    const eligibleStudents = STUDENTS.filter((s) => s.kelas === kelas);
     const activeSeatCount = TOTAL_SEATS - disabledSeats.size;
 
     const columns: SeatData[][] = [];
@@ -229,20 +347,25 @@ export default function KursiGenerator() {
 
     return (
         <div className="app-container">
-            <button
-                className="sidebar-toggle"
-                onClick={() => setShowSidebar(!showSidebar)}
-                aria-label={showSidebar ? "Tutup sidebar" : "Buka sidebar"}
-            >
-                {showSidebar ? "✕" : "☰"}
-            </button>
+            {!showSidebar && (
+                <button
+                    className={`sidebar-toggle closed`}
+                    onClick={() => setShowSidebar(true)}
+                    aria-label="Buka sidebar"
+                >
+                    <LuPanelLeftOpen style={{ fontSize: "20px" }} />
+                </button>
+            )}
 
             <Sidebar
                 showSidebar={showSidebar}
+                setShowSidebar={setShowSidebar}
                 matkul={matkul}
                 setMatkul={setMatkul}
                 kelas={kelas}
                 setKelas={setKelas}
+                matkulOptions={matkulOptions}
+                kelasMap={kelasMap}
                 disabledSeats={disabledSeats}
                 toggleDisabledSeat={toggleDisabledSeat}
                 eligibleStudents={eligibleStudents}
@@ -257,8 +380,17 @@ export default function KursiGenerator() {
             <main className="main-content">
                 <header className="main-header">
                     <div className="header-top-row">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                            <h1 className="main-title">Generator {matkul} {kelas}</h1>
+                        <div
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "16px",
+                                flexWrap: "wrap",
+                            }}
+                        >
+                            <h1 className="main-title">
+                                Generator {matkul} {kelas}
+                            </h1>
                             <div className="main-subtitle">
                                 {assignedCount}/{activeSeatCount} kursi terisi
                             </div>
@@ -266,10 +398,16 @@ export default function KursiGenerator() {
                         <button
                             className="theme-toggle"
                             onClick={toggleTheme}
-                            aria-label={theme === 'dark' ? 'Ganti ke tema terang' : 'Ganti ke tema gelap'}
-                            title={theme === 'dark' ? 'Tema Terang' : 'Tema Gelap'}
+                            aria-label={
+                                theme === "dark"
+                                    ? "Ganti ke tema terang"
+                                    : "Ganti ke tema gelap"
+                            }
+                            title={
+                                theme === "dark" ? "Tema Terang" : "Tema Gelap"
+                            }
                         >
-                            {theme === 'dark' ? <LuSun /> : <LuMoon />}
+                            {theme === "dark" ? <LuSun /> : <LuMoon />}
                         </button>
                     </div>
 
@@ -280,7 +418,11 @@ export default function KursiGenerator() {
                                     key={id}
                                     className={`tab ${activeTab === id ? "active" : ""}`}
                                     onClick={() => setActiveTab(id)}
-                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                                    style={{
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        gap: "6px",
+                                    }}
                                 >
                                     {icon}
                                     <span>{label}</span>
@@ -288,42 +430,78 @@ export default function KursiGenerator() {
                             ))}
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                        <div
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "12px",
+                                flexWrap: "wrap",
+                            }}
+                        >
                             <div className="projector-bar">
-                                <span className="projector-bar-label">Proyektor:</span>
+                                <span className="projector-bar-label">
+                                    Proyektor:
+                                </span>
                                 <label>
-                                    <input 
-                                        type="checkbox" 
-                                        checked={projectorConfig.showSeats} 
-                                        onChange={(e) => setProjectorConfig(p => ({ ...p, showSeats: e.target.checked }))} 
+                                    <input
+                                        type="checkbox"
+                                        checked={projectorConfig.showSeats}
+                                        onChange={(e) =>
+                                            setProjectorConfig((p) => ({
+                                                ...p,
+                                                showSeats: e.target.checked,
+                                            }))
+                                        }
                                     />
                                     Kursi
                                 </label>
                                 <label>
-                                    <input 
-                                        type="checkbox" 
-                                        checked={projectorConfig.showNotes} 
-                                        onChange={(e) => setProjectorConfig(p => ({ ...p, showNotes: e.target.checked }))} 
+                                    <input
+                                        type="checkbox"
+                                        checked={projectorConfig.showNotes}
+                                        onChange={(e) =>
+                                            setProjectorConfig((p) => ({
+                                                ...p,
+                                                showNotes: e.target.checked,
+                                            }))
+                                        }
                                     />
                                     Catatan
                                 </label>
                                 <label>
-                                    <input 
-                                        type="checkbox" 
-                                        checked={projectorConfig.showCountdown} 
-                                        onChange={(e) => setProjectorConfig(p => ({ ...p, showCountdown: e.target.checked }))} 
+                                    <input
+                                        type="checkbox"
+                                        checked={projectorConfig.showCountdown}
+                                        onChange={(e) =>
+                                            setProjectorConfig((p) => ({
+                                                ...p,
+                                                showCountdown: e.target.checked,
+                                            }))
+                                        }
                                     />
                                     Waktu
                                 </label>
                             </div>
 
-                            <button 
-                              className="btn btn-secondary" 
-                              style={{ padding: '6px 12px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                              onClick={() => window.open('/projector', 'ProjectorWindow', 'width=1280,height=720,menubar=no,toolbar=no,location=no,status=no,resizable=yes')}
+                            <button
+                                className="btn btn-secondary"
+                                style={{
+                                    padding: "6px 12px",
+                                    fontSize: "12px",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "6px",
+                                }}
+                                onClick={() =>
+                                    window.open(
+                                        "/projector",
+                                        "ProjectorWindow",
+                                        "width=1280,height=720,menubar=no,toolbar=no,location=no,status=no,resizable=yes",
+                                    )
+                                }
                             >
-                              <LuMonitor />
-                              Buka
+                                <LuMonitor />
+                                Buka
                             </button>
                         </div>
                     </div>
