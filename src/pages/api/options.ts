@@ -1,0 +1,34 @@
+import type { APIRoute } from "astro";
+
+export const prerender = false;
+
+export const GET: APIRoute = async ({ request }) => {
+    try {
+        const apiKey = import.meta.env.PRAKTIKAN_GET_API_KEY || "";
+        const apiUrl = import.meta.env.PRAKTIKAN_API_URL || "http://localhost:3001";
+        
+        const headers = new Headers(request.headers);
+        headers.delete("host");
+        headers.set("x-praktikan-api-key", apiKey);
+        headers.set("x-api-key", apiKey);
+        headers.set("Authorization", `Bearer ${apiKey}`);
+        
+        const res = await fetch(`${apiUrl}/api/praktikan?action=options`, {
+            headers
+        });
+        
+        const data = await res.json();
+        
+        return new Response(JSON.stringify(data), {
+            status: 200,
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+    } catch (e) {
+        return new Response(JSON.stringify({ error: "Server Error", details: String(e) }), {
+            status: 500,
+            headers: { "Content-Type": "application/json" }
+        });
+    }
+}

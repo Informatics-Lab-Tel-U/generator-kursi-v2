@@ -73,17 +73,7 @@ export default function KursiGenerator() {
     useEffect(() => {
         const fetchOptions = async () => {
             try {
-                const apiKey =
-                    import.meta.env.PUBLIC_PRAKTIKAN_GET_API_KEY || "";
-                const res = await fetch(
-                    "http://localhost:3001/api/praktikan?action=options",
-                    {
-                        headers: {
-                            "x-praktikan-api-key": apiKey,
-                            origin: "localhost:4321",
-                        },
-                    },
-                );
+                const res = await fetch("/api/options");
                 const data = await res.json();
 
                 let parsedMatkul: { value: string; label: string }[] = [];
@@ -118,14 +108,8 @@ export default function KursiGenerator() {
         const fetchStudents = async () => {
             setIsLoading(true);
             try {
-                const apiKey =
-                    import.meta.env.PUBLIC_PRAKTIKAN_GET_API_KEY || "";
-                const url = `http://localhost:3001/api/praktikan?kelas=${encodeURIComponent(kelas)}&mata_kuliah=${encodeURIComponent(matkul)}`;
-                const res = await fetch(url, {
-                    headers: {
-                        "x-praktikan-api-key": apiKey,
-                    },
-                });
+                const url = `/api/students?kelas=${encodeURIComponent(kelas)}&mata_kuliah=${encodeURIComponent(matkul)}`;
+                const res = await fetch(url);
                 const data = await res.json();
 
                 let students: Student[] = [];
