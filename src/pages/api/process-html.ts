@@ -10,15 +10,18 @@ if (!(global as any).leaderboardClients) {
     (global as any).leaderboardClients = {};
 }
 
-export const OPTIONS: APIRoute = async () => {
-    return new Response(null, {
-        status: 204,
-        headers: {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type",
-        }
-    });
+export const ALL: APIRoute = async ({ request }) => {
+    if (request.method === "OPTIONS") {
+        return new Response(null, {
+            status: 204,
+            headers: {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, ngrok-skip-browser-warning, Authorization",
+            }
+        });
+    }
+    return new Response(null, { status: 405 });
 };
 
 export const POST: APIRoute = async ({ request, url }) => {
