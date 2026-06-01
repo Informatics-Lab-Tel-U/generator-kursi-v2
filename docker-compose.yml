@@ -10,5 +10,6 @@ services:
             - "4323:4321"
         environment:
             - NODE_ENV=production
+        env_file:
             - .env
         restart: unless-stopped
