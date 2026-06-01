@@ -10,6 +10,17 @@ if (!(global as any).leaderboardClients) {
     (global as any).leaderboardClients = {};
 }
 
+export const OPTIONS: APIRoute = async () => {
+    return new Response(null, {
+        status: 204,
+        headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type",
+        }
+    });
+};
+
 export const POST: APIRoute = async ({ request, url }) => {
     try {
         const room = url.searchParams.get("room") || "default";
@@ -93,13 +104,17 @@ export const POST: APIRoute = async ({ request, url }) => {
         return new Response(JSON.stringify({ success: true, count: data.length }), {
             status: 200,
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*"
             }
         });
     } catch (e) {
         return new Response(JSON.stringify({ error: "Server Error", details: String(e) }), {
             status: 500,
-            headers: { "Content-Type": "application/json" }
+            headers: { 
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*"
+            }
         });
     }
 }
