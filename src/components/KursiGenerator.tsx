@@ -157,7 +157,7 @@ export default function KursiGenerator() {
     });
 
     const [notes, setNotes] = useState<string>(
-        "<h2>Kredensial Server</h2><ul><li><strong>IP Address:</strong> 10.34.1.100</li><li><strong>Username:</strong> praktikan</li><li><strong>Password:</strong> <code>Prakt1k@n2025</code></li></ul><hr><h2>Instruksi</h2><p>Selamat mengerjakan Modul 3 — Linked List.</p><p>Waktu pengerjaan: 90 menit.</p><p>Dilarang menggunakan HP selama praktikum berlangsung.</p>",
+        "<h2>Modul 13</h2><hr><p>Password: abcd123</p>",
     );
 
     const [projectorConfig, setProjectorConfig] = useState<ProjectorConfig>({
