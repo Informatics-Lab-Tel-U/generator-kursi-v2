@@ -26,6 +26,8 @@ export const GET: APIRoute = async ({ request }) => {
         headers.set("x-api-key", apiKey);
         headers.set("Authorization", `Bearer ${apiKey}`);
         
+        console.log(`[EXTERNAL_API] Requesting students from: GET ${backendUrl}`);
+        
         const res = await fetch(backendUrl, {
             headers
         });

@@ -13,7 +13,10 @@ export const GET: APIRoute = async ({ request }) => {
         headers.set("x-api-key", apiKey);
         headers.set("Authorization", `Bearer ${apiKey}`);
         
-        const res = await fetch(`${apiUrl}/api/praktikan?action=options`, {
+        const targetUrl = `${apiUrl}/api/praktikan?action=options`;
+        console.log(`[EXTERNAL_API] Requesting options from: GET ${targetUrl}`);
+        
+        const res = await fetch(targetUrl, {
             headers
         });
         

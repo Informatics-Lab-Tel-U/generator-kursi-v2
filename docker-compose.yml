@@ -1,13 +1,14 @@
-version: '3.8'
+version: "3.8"
 
 services:
-  app:
-    build:
-      context: .
-      target: runtime
-    container_name: kursi-generator-app
-    ports:
-      - "4321:4321"
-    environment:
-      - NODE_ENV=production
-    restart: unless-stopped
+    app:
+        build:
+            context: .
+            target: runtime
+        container_name: kursi-generator-app
+        ports:
+            - "4323:4321"
+        environment:
+            - NODE_ENV=production
+            - .env
+        restart: unless-stopped
