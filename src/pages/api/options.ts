@@ -4,8 +4,8 @@ export const prerender = false;
 
 export const GET: APIRoute = async ({ request }) => {
     try {
-        const apiKey = import.meta.env.PRAKTIKAN_GET_API_KEY || "";
-        const apiUrl = import.meta.env.PRAKTIKAN_API_URL || "http://localhost:3001";
+        const apiKey = process.env.PRAKTIKAN_GET_API_KEY || import.meta.env.PRAKTIKAN_GET_API_KEY || "";
+        const apiUrl = process.env.PRAKTIKAN_API_URL || import.meta.env.PRAKTIKAN_API_URL || "http://localhost:3001";
         
         const headers = new Headers(request.headers);
         headers.delete("host");
