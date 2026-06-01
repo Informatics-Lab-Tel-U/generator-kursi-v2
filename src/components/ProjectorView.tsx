@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { SeatData, TimerState, Racer, ProjectorConfig } from './types';
+import type { SeatData, TimerState, Racer, ProjectorConfig, Student } from './types';
 import { makeEmptySeats } from './utils';
 
 import SeatsTab from './SeatsTab';
@@ -22,6 +22,8 @@ export default function ProjectorView() {
     showNotes: false,
     showCountdown: false,
   });
+  const [kelas, setKelas] = useState<string>("");
+  const [eligibleStudents, setEligibleStudents] = useState<Student[]>([]);
 
   const [activeTab, setActiveTab] = useState<'generator' | 'info'>('generator');
 
@@ -35,6 +37,8 @@ export default function ProjectorView() {
       if (data.racers) setRacers(data.racers);
       if (data.notes) setNotes(data.notes);
       if (data.projectorConfig) setProjectorConfig(data.projectorConfig);
+      if (data.kelas !== undefined) setKelas(data.kelas);
+      if (data.eligibleStudents) setEligibleStudents(data.eligibleStudents);
     };
 
     channel.postMessage({ type: 'REQUEST_SYNC' });
@@ -112,6 +116,8 @@ export default function ProjectorView() {
               timer={timer} 
               racers={racers} 
               readOnly={true} 
+              kelas={kelas}
+              eligibleStudents={eligibleStudents}
             />
           </div>
         </div>

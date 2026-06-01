@@ -1,5 +1,6 @@
 import type { Student, ProjectorConfig } from './types';
 import { LuSettings, LuBook, LuUsers, LuBan, LuDices, LuRotateCcw, LuFileText, LuLoader, LuPanelLeftClose } from 'react-icons/lu';
+import CustomSelect from './CustomSelect';
 
 interface SidebarProps {
   showSidebar: boolean;
@@ -72,39 +73,26 @@ export default function Sidebar({
         <label className="sidebar-label">
           <LuBook style={{ marginRight: '6px' }} /> Mata Kuliah
         </label>
-        <select
-          className="sidebar-select"
+        <CustomSelect
           value={matkul}
-          onChange={(e) => {
-            const v = e.target.value;
+          onChange={(v) => {
             setMatkul(v);
             setKelas(""); // Reset kelas so user must explicitly pick again
           }}
-        >
-          <option value="" disabled>-- Pilih Mata Kuliah --</option>
-          {matkulOptions.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+          options={matkulOptions}
+          placeholder="-- Pilih Mata Kuliah --"
+        />
 
         <label className="sidebar-label">
           <LuUsers style={{ marginRight: '6px' }} /> Kelas
         </label>
-        <select
-          className="sidebar-select"
+        <CustomSelect
           value={kelas}
-          onChange={(e) => setKelas(e.target.value)}
+          onChange={(v) => setKelas(v)}
+          options={kelasOptions}
+          placeholder="-- Pilih Kelas --"
           disabled={!matkul}
-        >
-          <option value="" disabled>-- Pilih Kelas --</option>
-          {kelasOptions.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+        />
       </div>
 
       {/* Disabled seats */}

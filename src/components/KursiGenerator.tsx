@@ -227,6 +227,8 @@ export default function KursiGenerator() {
             notes,
             racers,
             projectorConfig,
+            kelas,
+            eligibleStudents,
         });
 
         // Also respond to REQUEST_SYNC from newly opened projectors
@@ -239,12 +241,14 @@ export default function KursiGenerator() {
                     notes,
                     racers,
                     projectorConfig,
+                    kelas,
+                    eligibleStudents,
                 });
             }
         };
 
         return () => channel.close();
-    }, [seats, disabledSeats, timer, notes, racers, projectorConfig]);
+    }, [seats, disabledSeats, timer, notes, racers, projectorConfig, kelas, eligibleStudents]);
 
     // Generate
     const handleGenerate = useCallback(() => {
@@ -514,6 +518,8 @@ export default function KursiGenerator() {
                         setTimer={setTimer}
                         racers={racers}
                         setRacers={setRacers}
+                        kelas={kelas}
+                        eligibleStudents={eligibleStudents}
                     />
                 )}
             </main>

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import type { TimerState, Racer, RacerJitter } from './types';
+import type { TimerState, Racer, RacerJitter, Student } from './types';
 import { formatTimeWithMs, formatClockTime } from './utils';
-import { LuPlay, LuPause, LuCar, LuCamera } from 'react-icons/lu';
+import { LuPlay, LuPause, LuCar, LuCamera, LuCopy, LuCheck } from 'react-icons/lu';
+import LeaderboardView from './LeaderboardView';
 
 interface CountdownTabProps {
   timer: TimerState;
@@ -9,12 +10,53 @@ interface CountdownTabProps {
   racers: Racer[];
   setRacers?: React.Dispatch<React.SetStateAction<Racer[]>>;
   readOnly?: boolean;
+  kelas?: string;
+  eligibleStudents?: Student[];
 }
 
-export default function CountdownTab({ timer, setTimer, racers, setRacers, readOnly = false }: CountdownTabProps) {
+export default function CountdownTab({ timer, setTimer, racers, setRacers, readOnly = false, kelas = "", eligibleStudents = [] }: CountdownTabProps) {
   const [now, setNow] = useState(new Date());
   const jitterMapRef = useRef<Record<string, RacerJitter>>({});
   const [newRacerName, setNewRacerName] = useState("");
+  const [isCopied, setIsCopied] = useState(false);
+  
+  const generateScript = () => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : "http://localhost:3000";
+    return `(async function () {
+  const API_BASE = "${origin}";
+  const ROOM = "${kelas || 'default'}";
+
+  async function sendAttemptsHTML() {
+    try {
+      const response = await fetch(window.location.href);
+      const html = await response.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html");
+      const attemptsElement = doc.getElementById("attempts");
+      if (!attemptsElement) return;
+
+      await fetch(\`\${API_BASE}/api/process-html?room=\${ROOM}\`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "ngrok-skip-browser-warning": "true"
+        },
+        body: JSON.stringify({ html: attemptsElement.outerHTML })
+      });
+    } catch (err) {
+      console.error("Script error:", err);
+    }
+  }
+  setInterval(sendAttemptsHTML, 5000);
+})();`;
+  };
+
+  const copyScript = () => {
+    navigator.clipboard.writeText(generateScript());
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
 
   useEffect(() => {
     let interval: number;
@@ -190,6 +232,27 @@ export default function CountdownTab({ timer, setTimer, racers, setRacers, readO
               </div>
           )}
 
+          {!readOnly && (
+              <div className="countdown-config-card" style={{ marginTop: '16px', flexDirection: 'column', alignItems: 'stretch' }}>
+                  <h3 style={{ margin: "0 0 8px 0", fontSize: "15px", fontWeight: 600 }}>Setup Moodle Leaderboard</h3>
+                  <p style={{ margin: "0 0 12px 0", fontSize: "13px", color: "var(--text-muted)" }}>
+                      Copy script di bawah ini, lalu buka halaman grading Moodle (yang menampilkan tabel peserta). Buka Developer Console (F12 -&gt; Console), paste, lalu tekan Enter.
+                  </p>
+                  <div style={{ position: 'relative', background: 'var(--bg-body)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                      <pre style={{ margin: 0, fontSize: '11px', overflowX: 'auto', color: 'var(--text-secondary)' }}>
+                          {generateScript()}
+                      </pre>
+                      <button 
+                          className="btn btn-secondary" 
+                          onClick={copyScript}
+                          style={{ position: 'absolute', top: '8px', right: '8px', padding: '6px 10px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                          {isCopied ? <><LuCheck style={{ color: 'var(--success)' }} /> Copied</> : <><LuCopy /> Copy</>}
+                      </button>
+                  </div>
+              </div>
+          )}
+
           <div className="race-track-container">
               <div style={{ textAlign: "center", marginBottom: "24px" }}>
                   <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "8px" }}>Waktu Tersisa</div>
@@ -232,6 +295,10 @@ export default function CountdownTab({ timer, setTimer, racers, setRacers, readO
                   <div className="finish-line"></div>
               </div>
           </div>
+          <LeaderboardView 
+              room={kelas}
+              students={eligibleStudents}
+          />
       </div>
   );
 }
