@@ -35,6 +35,10 @@ export const POST: APIRoute = async ({ request, url }) => {
         }
 
         const root = parse(html);
+        
+        // Clean up noise elements that mess up textContent extraction
+        root.querySelectorAll('.accesshide, .reviewlink, .commands').forEach(el => el.remove());
+
         const rows = root.querySelectorAll("tbody tr");
         const headers = root.querySelectorAll("thead th").map(th => th.textContent.trim().replace(/\s+/g, ' '));
         
@@ -49,6 +53,7 @@ export const POST: APIRoute = async ({ request, url }) => {
 
             cells.forEach((cell, index) => {
                 const header = headers[index] || `Column ${index}`;
+                // Some nodes like icons might still be there, but textContent will ignore them
                 let text = cell.textContent.trim().replace(/\s+/g, ' ');
                 
                 rowData[header] = text;
@@ -62,6 +67,10 @@ export const POST: APIRoute = async ({ request, url }) => {
             const surname = rowData["Surname"] || rowData["Nama akhir"] || "";
             if (firstName || surname) {
                 rowData["NAME"] = `${firstName} ${surname}`.trim();
+            } else if (rowData["First name / Last name"]) {
+                rowData["NAME"] = rowData["First name / Last name"];
+            } else if (rowData["Nama depan / Nama akhir"]) {
+                rowData["NAME"] = rowData["Nama depan / Nama akhir"];
             } else if (rowData["Name"]) {
                 rowData["NAME"] = rowData["Name"];
             } else if (rowData["Nama"]) {
