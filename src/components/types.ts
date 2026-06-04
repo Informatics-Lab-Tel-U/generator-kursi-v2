@@ -37,3 +37,11 @@ export interface ProjectorConfig {
 }
 
 export type TabId = 'seats' | 'notes' | 'countdown';
+
+export interface SeatVersion {
+  id: string;
+  timestamp: number;
+  seats: SeatData[];
+  matkul: string;
+  kelas: string;
+}

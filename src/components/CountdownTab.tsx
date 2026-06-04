@@ -141,6 +141,45 @@ export default function CountdownTab({
     );
 
     const startRace = useCallback(() => {
+        const now = new Date();
+        const day = now.getDay();
+        let daySessions: {start: string, end: string}[] = [];
+        
+        if (day >= 1 && day <= 4) {
+            daySessions = [
+                { start: '06:40', end: '08:20' },
+                { start: '09:40', end: '11:20' },
+                { start: '12:40', end: '14:20' },
+                { start: '15:40', end: '17:20' }
+            ];
+        } else if (day === 5) {
+            daySessions = [
+                { start: '07:40', end: '09:20' },
+                { start: '13:40', end: '15:20' }
+            ];
+        } else if (day === 6) {
+            daySessions = [
+                { start: '07:40', end: '09:20' },
+                { start: '10:40', end: '12:20' },
+                { start: '13:40', end: '15:20' },
+                { start: '16:40', end: '18:20' }
+            ];
+        }
+        
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        let targetSession = null;
+        for (const session of daySessions) {
+            const [endH, endM] = session.end.split(':').map(Number);
+            const endMins = endH * 60 + endM;
+            if (currentMinutes <= endMins) {
+                targetSession = session;
+                break;
+            }
+        }
+        if (!targetSession && daySessions.length > 0) {
+            targetSession = daySessions[daySessions.length - 1];
+        }
+
         const shuffledRacers = [...racers].sort(() => Math.random() - 0.5);
         const newJitter: Record<string, RacerJitter> = {};
 
@@ -155,7 +194,12 @@ export default function CountdownTab({
         });
         jitterMapRef.current = newJitter;
         if (setTimer)
-            setTimer((p) => ({ ...p, isRunning: true, startedAt: Date.now() }));
+            setTimer((p) => ({ 
+                ...p, 
+                isRunning: true, 
+                startedAt: Date.now(),
+                ...(targetSession ? { startTime: targetSession.start, endTime: targetSession.end } : {})
+            }));
     }, [racers, setTimer]);
 
     const startD = new Date();
@@ -174,9 +218,8 @@ export default function CountdownTab({
     if (totalSecs <= 0) totalSecs = 1;
 
     let remainMs = totalSecs * 1000;
-    if (timer.isRunning && timer.startedAt) {
-        const elapsed = now.getTime() - timer.startedAt;
-        remainMs = totalSecs * 1000 - elapsed;
+    if (timer.isRunning) {
+        remainMs = endD.getTime() - now.getTime();
     }
     if (remainMs < 0) remainMs = 0;
 
@@ -522,9 +565,7 @@ export default function CountdownTab({
                             }}
                         >
                             Selesai Pukul:{" "}
-                            {formatClockTime(
-                                new Date(timer.startedAt + totalSecs * 1000),
-                            )}
+                            {formatClockTime(endD)}
                         </div>
                     )}
                 </div>

@@ -22,6 +22,8 @@ interface SidebarProps {
   totalSeats: number;
   projectorConfig: ProjectorConfig;
   setProjectorConfig: React.Dispatch<React.SetStateAction<ProjectorConfig>>;
+  versions: import('./types').SeatVersion[];
+  restoreVersion: (v: import('./types').SeatVersion) => void;
 }
 
 export default function Sidebar({
@@ -42,6 +44,8 @@ export default function Sidebar({
   handleGenerate,
   handleReset,
   totalSeats,
+  versions,
+  restoreVersion,
 }: SidebarProps) {
 
   return (
@@ -163,6 +167,33 @@ export default function Sidebar({
           <strong>Catatan</strong>.
         </div>
       </div>
+
+      {/* Riwayat / Versi */}
+      {versions && versions.length > 0 && (
+          <div className="sidebar-section">
+            <label className="sidebar-label">Riwayat Generate (2 Jam Terakhir)</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {versions.map(v => {
+                    const date = new Date(v.timestamp);
+                    const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    return (
+                        <button 
+                            key={v.id} 
+                            className="btn btn-secondary"
+                            style={{ justifyContent: 'flex-start', fontSize: '12px', padding: '8px', textAlign: 'left', lineHeight: '1.4' }}
+                            onClick={() => restoreVersion(v)}
+                            title="Klik untuk merestore versi ini"
+                        >
+                            <strong>{timeStr}</strong>
+                            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                {v.matkul} - {v.kelas}
+                            </div>
+                        </button>
+                    )
+                })}
+            </div>
+          </div>
+      )}
 
     </aside>
   );

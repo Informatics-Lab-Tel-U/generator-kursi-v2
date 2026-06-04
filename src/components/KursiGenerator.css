@@ -485,10 +485,10 @@
 
 .seat-column-header {
     display: grid;
-    grid-template-columns: 32px 1fr 80px;
+    grid-template-columns: 36px 1fr 84px;
     background: var(--bg-header);
     color: var(--text-header);
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -509,11 +509,11 @@
 /* ===== Seat Rows ===== */
 .seat-row {
     display: grid;
-    grid-template-columns: 32px 1fr 80px;
+    grid-template-columns: 36px 1fr 84px;
     border-bottom: 1px solid var(--border-light);
-    font-size: 13px;
+    font-size: 14px;
     transition: background var(--transition-fast);
-    height: 48px;
+    height: 56px;
     box-sizing: border-box;
     align-items: center;
     cursor: default;
@@ -568,7 +568,7 @@
     font-weight: 700;
     color: var(--text-muted);
     padding: 8px 4px;
-    font-size: 13px;
+    font-size: 15px;
 }
 
 .seat-row.occupied .cell-no {
@@ -584,7 +584,7 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
     white-space: normal;
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.3;
     word-break: break-word;
 }
@@ -603,9 +603,9 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 11px;
     font-weight: 700;
     letter-spacing: 0.03em;
     line-height: 1.4;

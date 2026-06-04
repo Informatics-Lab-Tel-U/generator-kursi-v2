@@ -75,7 +75,7 @@ export default function SeatsTab({
           <div key={colIdx} className="seat-column">
             <div className="seat-column-header">
               <span className="col-no">NO</span>
-              <span className="col-nim">NIM</span>
+              <span className="col-nim">NAMA</span>
               <span className="col-asprak">ASPRAK</span>
             </div>
             {column.map((seat) => {

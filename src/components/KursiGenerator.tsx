@@ -8,6 +8,7 @@ import type {
     Racer,
     TabId,
     ProjectorConfig,
+    SeatVersion,
 } from "./types";
 import { makeEmptySeats, fisherYatesShuffle } from "./utils";
 
@@ -56,11 +57,28 @@ export default function KursiGenerator() {
     const [matkul, setMatkul] = useState("");
     const [kelas, setKelas] = useState("");
     const [seats, setSeats] = useState<SeatData[]>(makeEmptySeats(TOTAL_SEATS));
-    const [disabledSeats, setDisabledSeats] = useState<Set<number>>(new Set());
+    const [disabledSeats, setDisabledSeats] = useState<Set<number>>(new Set([1, 2]));
     const [activeTab, setActiveTab] = useState<TabId>("seats");
     const [isLoading, setIsLoading] = useState(false);
     const [isOptionsLoading, setIsOptionsLoading] = useState(false);
     const [showSidebar, setShowSidebar] = useState(true);
+
+    const [versions, setVersions] = useState<SeatVersion[]>([]);
+
+    useEffect(() => {
+        try {
+            const saved = localStorage.getItem("kursi_versions");
+            if (saved) {
+                const parsed: SeatVersion[] = JSON.parse(saved);
+                const now = Date.now();
+                const valid = parsed.filter(v => now - v.timestamp < 2 * 60 * 60 * 1000); // 2 jam
+                setVersions(valid);
+                if (valid.length !== parsed.length) {
+                    localStorage.setItem("kursi_versions", JSON.stringify(valid));
+                }
+            }
+        } catch (e) {}
+    }, []);
 
     // API State
     const [matkulOptions, setMatkulOptions] = useState<
@@ -154,7 +172,11 @@ export default function KursiGenerator() {
 
     // 3. Fetch students when both mata kuliah and kelas are selected
     useEffect(() => {
-        if (!matkul) return;
+        if (!matkul || !kelas) {
+            setEligibleStudents([]);
+            setSeats(makeEmptySeats(TOTAL_SEATS));
+            return;
+        }
 
         const fetchStudents = async () => {
             const cacheKey = kelas
@@ -237,56 +259,7 @@ export default function KursiGenerator() {
         showCountdown: false,
     });
 
-    // Persist / restore
-    useEffect(() => {
-        try {
-            const saved = localStorage.getItem("kursi-gen");
-            if (saved) {
-                const p = JSON.parse(saved);
-                if (p.seats) setSeats(p.seats);
-                if (p.disabledSeats) setDisabledSeats(new Set(p.disabledSeats));
-                if (p.matkul) setMatkul(p.matkul);
-                if (p.kelas) setKelas(p.kelas);
-                if (p.timer)
-                    setTimer({ ...p.timer, isRunning: false, startedAt: null });
-                if (p.notes) setNotes(p.notes);
-                if (p.racers) setRacers(p.racers);
-                if (p.projectorConfig) setProjectorConfig(p.projectorConfig);
-            }
-        } catch {
-            /* ignore */
-        }
-    }, []);
 
-    useEffect(() => {
-        try {
-            localStorage.setItem(
-                "kursi-gen",
-                JSON.stringify({
-                    seats,
-                    disabledSeats: Array.from(disabledSeats),
-                    matkul,
-                    kelas,
-                    timer: { ...timer, isRunning: false, startedAt: null },
-                    notes,
-                    racers,
-                    projectorConfig,
-                }),
-            );
-        } catch {
-            /* ignore */
-        }
-    }, [
-        seats,
-        disabledSeats,
-        matkul,
-        kelas,
-        timer.startTime,
-        timer.endTime,
-        notes,
-        racers,
-        projectorConfig,
-    ]);
 
     // Broadcast to Projector
     useEffect(() => {
@@ -336,8 +309,28 @@ export default function KursiGenerator() {
             }
             setSeats(newSeats);
             setIsLoading(false);
+
+            const newVersion: SeatVersion = {
+                id: Math.random().toString(36).substring(2, 11),
+                timestamp: Date.now(),
+                seats: newSeats,
+                matkul,
+                kelas,
+            };
+
+            setVersions((prev) => {
+                const next = [newVersion, ...prev].slice(0, 20); // Simpan 20 riwayat terakhir
+                localStorage.setItem("kursi_versions", JSON.stringify(next));
+                return next;
+            });
         }, 500);
-    }, [eligibleStudents, disabledSeats]);
+    }, [eligibleStudents, disabledSeats, matkul, kelas]);
+
+    const restoreVersion = useCallback((version: SeatVersion) => {
+        setMatkul(version.matkul);
+        setKelas(version.kelas);
+        setSeats(version.seats);
+    }, []);
 
     const handleReset = useCallback(
         () => setSeats(makeEmptySeats(TOTAL_SEATS)),
@@ -436,6 +429,8 @@ export default function KursiGenerator() {
                 totalSeats={TOTAL_SEATS}
                 projectorConfig={projectorConfig}
                 setProjectorConfig={setProjectorConfig}
+                versions={versions}
+                restoreVersion={restoreVersion}
             />
 
             <main className="main-content">
@@ -569,18 +564,35 @@ export default function KursiGenerator() {
                 </header>
 
                 {activeTab === "seats" && (
-                    <SeatsTab
-                        columns={columns}
-                        disabledSeats={disabledSeats}
-                        dragSourceSeat={dragSourceSeat}
-                        dragOverSeat={dragOverSeat}
-                        isLoading={isLoading}
-                        handleDragStart={handleDragStart}
-                        handleDragOver={handleDragOver}
-                        handleDragLeave={handleDragLeave}
-                        handleDrop={handleDrop}
-                        handleDragEnd={handleDragEnd}
-                    />
+                    (!matkul || !kelas) ? (
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: '100%',
+                            minHeight: '400px',
+                            color: 'var(--text-muted)',
+                            fontSize: '16px',
+                            flexDirection: 'column',
+                            gap: '12px'
+                        }}>
+                            <LuLayoutGrid style={{ fontSize: '48px', opacity: 0.5 }} />
+                            <span>Silakan pilih Mata Kuliah dan Kelas terlebih dahulu</span>
+                        </div>
+                    ) : (
+                        <SeatsTab
+                            columns={columns}
+                            disabledSeats={disabledSeats}
+                            dragSourceSeat={dragSourceSeat}
+                            dragOverSeat={dragOverSeat}
+                            isLoading={isLoading}
+                            handleDragStart={handleDragStart}
+                            handleDragOver={handleDragOver}
+                            handleDragLeave={handleDragLeave}
+                            handleDrop={handleDrop}
+                            handleDragEnd={handleDragEnd}
+                        />
+                    )
                 )}
                 {activeTab === "notes" && (
                     <NotesTab notes={notes} setNotes={setNotes} />
