@@ -10,11 +10,13 @@ interface SidebarProps {
   kelas: string;
   setKelas: (val: string) => void;
   matkulOptions: {value: string, label: string}[];
-  kelasMap: Record<string, {value: string, label: string}[]>;
+  kelasOptions: {value: string, label: string}[];
   disabledSeats: Set<number>;
   toggleDisabledSeat: (seatNo: number) => void;
   eligibleStudents: Student[];
   isLoading: boolean;
+  isOptionsLoading: boolean;
+  isKelasLoading: boolean;
   handleGenerate: () => void;
   handleReset: () => void;
   totalSeats: number;
@@ -30,16 +32,17 @@ export default function Sidebar({
   kelas,
   setKelas,
   matkulOptions,
-  kelasMap,
+  kelasOptions,
   disabledSeats,
   toggleDisabledSeat,
   eligibleStudents,
   isLoading,
+  isOptionsLoading,
+  isKelasLoading,
   handleGenerate,
   handleReset,
   totalSeats,
 }: SidebarProps) {
-  const kelasOptions = kelasMap[matkul] || [];
 
   return (
     <aside className={`sidebar ${showSidebar ? "open" : "closed"}`}>
@@ -81,6 +84,8 @@ export default function Sidebar({
           }}
           options={matkulOptions}
           placeholder="-- Pilih Mata Kuliah --"
+          isLoading={isOptionsLoading}
+          disabled={isOptionsLoading}
         />
 
         <label className="sidebar-label">
@@ -91,7 +96,8 @@ export default function Sidebar({
           onChange={(v) => setKelas(v)}
           options={kelasOptions}
           placeholder="-- Pilih Kelas --"
-          disabled={!matkul}
+          disabled={!matkul || isKelasLoading || isOptionsLoading}
+          isLoading={isKelasLoading}
         />
       </div>
 

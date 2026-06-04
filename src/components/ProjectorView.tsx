@@ -26,6 +26,30 @@ export default function ProjectorView() {
   const [eligibleStudents, setEligibleStudents] = useState<Student[]>([]);
 
   const [activeTab, setActiveTab] = useState<'generator' | 'info'>('generator');
+  const [notesWidth, setNotesWidth] = useState(350);
+
+  const startDrag = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = notesWidth;
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = moveEvent.clientX - startX;
+      setNotesWidth(Math.max(250, Math.min(startWidth + deltaX, window.innerWidth - 300)));
+    };
+
+    const handleMouseUp = () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  };
 
   useEffect(() => {
     const channel = new BroadcastChannel('kursi-gen-sync');
@@ -86,11 +110,8 @@ export default function ProjectorView() {
     <div style={{ display: 'flex', gap: '16px', flex: 1, overflow: 'hidden' }}>
       {projectorConfig.showNotes && (
         <div className="projector-panel" style={{ 
-          width: projectorConfig.showCountdown ? '50%' : '100%',
+          width: projectorConfig.showCountdown ? `${notesWidth}px` : '100%',
           flex: projectorConfig.showCountdown ? '0 0 auto' : '1',
-          resize: projectorConfig.showCountdown ? 'horizontal' : 'none',
-          minWidth: '300px',
-          maxWidth: '80%',
           display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg-card)', padding: '20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' 
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>
@@ -101,17 +122,36 @@ export default function ProjectorView() {
           </div>
         </div>
       )}
+
+      {projectorConfig.showNotes && projectorConfig.showCountdown && (
+        <div 
+          onMouseDown={startDrag}
+          style={{ 
+            width: '12px', 
+            cursor: 'col-resize', 
+            background: 'transparent',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            margin: '0 -6px',
+            zIndex: 10
+          }}
+        >
+          <div style={{ width: '4px', height: '32px', background: 'var(--border)', borderRadius: '2px' }}></div>
+        </div>
+      )}
       
       {projectorConfig.showCountdown && (
         <div className="projector-panel" style={{ 
-          flex: '1 1 auto', 
-          minWidth: '300px',
+          flex: '1 1 0', 
+          minWidth: 0,
           display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg-card)', padding: '20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' 
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>
             <LuTimer /> Waktu & Pembalap
           </div>
-          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
             <CountdownTab 
               timer={timer} 
               racers={racers} 

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { LuChevronDown } from "react-icons/lu";
+import { LuChevronDown, LuLoader } from "react-icons/lu";
 
 interface Option {
   value: string;
@@ -12,6 +12,7 @@ interface CustomSelectProps {
   options: Option[];
   placeholder?: string;
   disabled?: boolean;
+  isLoading?: boolean;
 }
 
 export default function CustomSelect({
@@ -20,6 +21,7 @@ export default function CustomSelect({
   options,
   placeholder = "-- Pilih --",
   disabled = false,
+  isLoading = false,
 }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -51,8 +53,8 @@ export default function CustomSelect({
       <button
         type="button"
         className="sidebar-select custom-select-trigger"
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-        disabled={disabled}
+        onClick={() => !disabled && !isLoading && setIsOpen(!isOpen)}
+        disabled={disabled || isLoading}
         style={{
           display: "flex",
           alignItems: "center",
@@ -66,18 +68,29 @@ export default function CustomSelect({
         <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {selectedOption ? selectedOption.label : placeholder}
         </span>
-        <LuChevronDown
-          style={{
-            flexShrink: 0,
-            marginLeft: "8px",
-            color: "var(--text-secondary)",
-            transition: "transform 0.2s",
-            transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
-          }}
-        />
+        {isLoading ? (
+          <LuLoader
+            className="animate-spin"
+            style={{
+              flexShrink: 0,
+              marginLeft: "8px",
+              color: "var(--text-secondary)",
+            }}
+          />
+        ) : (
+          <LuChevronDown
+            style={{
+              flexShrink: 0,
+              marginLeft: "8px",
+              color: "var(--text-secondary)",
+              transition: "transform 0.2s",
+              transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+            }}
+          />
+        )}
       </button>
 
-      {isOpen && !disabled && (
+      {isOpen && !disabled && !isLoading && (
         <ul className="custom-select-options">
           <li
             className="custom-select-option placeholder"
