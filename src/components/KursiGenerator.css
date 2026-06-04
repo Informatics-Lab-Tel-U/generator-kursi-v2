@@ -649,6 +649,14 @@
     }
 }
 
+/* ===== Names Formatting ===== */
+.name-small {
+    display: none;
+}
+.name-default {
+    display: inline;
+}
+
 /* ===== Notes Tab ===== */
 .notes-tab {
     width: 100%;
@@ -969,15 +977,12 @@
 }
 
 /* ===== Responsive ===== */
-@media (max-width: 1400px) {
-    .seat-grid {
-        grid-template-columns: repeat(4, 1fr);
-    }
-}
-
 @media (max-width: 1100px) {
-    .seat-grid {
-        grid-template-columns: repeat(3, 1fr);
+    .name-default {
+        display: none;
+    }
+    .name-small {
+        display: inline;
     }
 }
 
@@ -995,10 +1000,6 @@
         padding: 0;
     }
 
-    .seat-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
     .main-content {
         padding: 16px;
     }
@@ -1011,10 +1012,6 @@
 }
 
 @media (max-width: 600px) {
-    .seat-grid {
-        grid-template-columns: 1fr;
-    }
-
     .tab {
         padding: 8px 12px;
         font-size: 12px;

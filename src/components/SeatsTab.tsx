@@ -36,6 +36,26 @@ function getAsprakColor(asprak: string) {
   return ASPRAK_COLORS[asprak];
 }
 
+function formatName(name: string): { defaultName: string, smallName: string } {
+  if (!name) return { defaultName: "", smallName: "" };
+  const parts = name.split(' ').filter(Boolean);
+  if (parts.length === 1) return { defaultName: parts[0], smallName: parts[0] };
+  
+  const defaultName = [
+    parts[0],
+    parts[1],
+    ...parts.slice(2).map(p => p[0] + '.')
+  ].join(' ');
+
+  const smallName = [
+    parts[0][0] + '.',
+    parts[1],
+    ...parts.slice(2).map(p => p[0] + '.')
+  ].join(' ');
+
+  return { defaultName, smallName };
+}
+
 export default function SeatsTab({
   columns,
   disabledSeats,
@@ -95,8 +115,13 @@ export default function SeatsTab({
                       <span className="skeleton-bar" />
                     ) : isDisabled ? (
                       <span className="disabled-label">—</span>
+                    ) : seat.student ? (
+                      <>
+                        <span className="name-default">{formatName(seat.student.name).defaultName}</span>
+                        <span className="name-small">{formatName(seat.student.name).smallName}</span>
+                      </>
                     ) : (
-                      seat.student?.name || ""
+                      ""
                     )}
                   </span>
                   <span className="cell-asprak">
