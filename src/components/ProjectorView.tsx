@@ -149,7 +149,7 @@ export default function ProjectorView() {
           display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg-card)', padding: '20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)' 
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>
-            <LuTimer /> Waktu & Pembalap
+            <LuTimer /> Hitung Mundur
           </div>
           <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
             <CountdownTab 

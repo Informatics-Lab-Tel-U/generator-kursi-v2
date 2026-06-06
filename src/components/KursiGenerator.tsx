@@ -10,7 +10,7 @@ import type {
     ProjectorConfig,
     SeatVersion,
 } from "./types";
-import { makeEmptySeats, fisherYatesShuffle } from "./utils";
+import { makeEmptySeats, fisherYatesShuffle, getDefaultTimerSession } from "./utils";
 
 import Sidebar from "./Sidebar";
 import SeatsTab from "./SeatsTab";
@@ -26,7 +26,21 @@ import {
     LuPanelLeftOpen,
 } from "react-icons/lu";
 
-const TOTAL_SEATS = 50;
+function getRequiredTotalSeats(studentsCount: number, disabledSeats: Set<number>) {
+    if (studentsCount === 0) return 50;
+    let c = 10;
+    while (true) {
+        let disabledInC = 0;
+        for (let d of disabledSeats) {
+            if (d <= c) disabledInC++;
+        }
+        if (c - disabledInC >= studentsCount) {
+            break;
+        }
+        c += 10;
+    }
+    return c;
+}
 
 function useTheme() {
     const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -56,7 +70,7 @@ export default function KursiGenerator() {
     const { theme, toggleTheme } = useTheme();
     const [matkul, setMatkul] = useState("");
     const [kelas, setKelas] = useState("");
-    const [seats, setSeats] = useState<SeatData[]>(makeEmptySeats(TOTAL_SEATS));
+    const [seats, setSeats] = useState<SeatData[]>(makeEmptySeats(50));
     const [disabledSeats, setDisabledSeats] = useState<Set<number>>(new Set([1, 2]));
     const [activeTab, setActiveTab] = useState<TabId>("seats");
     const [isLoading, setIsLoading] = useState(false);
@@ -174,7 +188,7 @@ export default function KursiGenerator() {
     useEffect(() => {
         if (!matkul || !kelas) {
             setEligibleStudents([]);
-            setSeats(makeEmptySeats(TOTAL_SEATS));
+            setSeats(makeEmptySeats(50));
             return;
         }
 
@@ -221,9 +235,10 @@ export default function KursiGenerator() {
 
                 // Auto generate immediately
                 const shuffled = fisherYatesShuffle(students);
-                const newSeats = makeEmptySeats(TOTAL_SEATS);
+                const reqSeats = getRequiredTotalSeats(students.length, disabledSeats);
+                const newSeats = makeEmptySeats(reqSeats);
                 let idx = 0;
-                for (let i = 0; i < TOTAL_SEATS; i++) {
+                for (let i = 0; i < reqSeats; i++) {
                     if (!disabledSeats.has(i + 1) && idx < shuffled.length) {
                         newSeats[i].student = shuffled[idx++];
                     }
@@ -242,11 +257,14 @@ export default function KursiGenerator() {
     const [dragOverSeat, setDragOverSeat] = useState<number | null>(null);
 
     const [racers, setRacers] = useState<Racer[]>([]);
-    const [timer, setTimer] = useState<TimerState>({
-        startTime: "08:00",
-        endTime: "10:00",
-        isRunning: false,
-        startedAt: null,
+    const [timer, setTimer] = useState<TimerState>(() => {
+        const defaultSession = getDefaultTimerSession();
+        return {
+            startTime: defaultSession.start,
+            endTime: defaultSession.end,
+            isRunning: false,
+            startedAt: null,
+        };
     });
 
     const [notes, setNotes] = useState<string>(
@@ -300,9 +318,10 @@ export default function KursiGenerator() {
         setTimeout(() => {
             const filtered = eligibleStudents;
             const shuffled = fisherYatesShuffle(filtered);
-            const newSeats = makeEmptySeats(TOTAL_SEATS);
+            const reqSeats = getRequiredTotalSeats(filtered.length, disabledSeats);
+            const newSeats = makeEmptySeats(reqSeats);
             let idx = 0;
-            for (let i = 0; i < TOTAL_SEATS; i++) {
+            for (let i = 0; i < reqSeats; i++) {
                 if (!disabledSeats.has(i + 1) && idx < shuffled.length) {
                     newSeats[i].student = shuffled[idx++];
                 }
@@ -333,8 +352,8 @@ export default function KursiGenerator() {
     }, []);
 
     const handleReset = useCallback(
-        () => setSeats(makeEmptySeats(TOTAL_SEATS)),
-        [],
+        () => setSeats(makeEmptySeats(getRequiredTotalSeats(eligibleStudents.length, disabledSeats))),
+        [eligibleStudents.length, disabledSeats],
     );
 
     const toggleDisabledSeat = useCallback((seatNo: number) => {
@@ -344,6 +363,16 @@ export default function KursiGenerator() {
             return next;
         });
     }, []);
+
+    // Regenerate seats if a disabled seat is currently occupied
+    useEffect(() => {
+        const needsRegeneration = seats.some(
+            (seat) => disabledSeats.has(seat.seatNo) && seat.student !== null
+        );
+        if (needsRegeneration && eligibleStudents.length > 0 && !isLoading) {
+            handleGenerate();
+        }
+    }, [disabledSeats, seats, eligibleStudents.length, isLoading, handleGenerate]);
 
     // Drag-and-drop
     const handleDragStart = useCallback(
@@ -386,10 +415,19 @@ export default function KursiGenerator() {
     }, []);
 
     const assignedCount = seats.filter((s) => s.student !== null).length;
-    const activeSeatCount = TOTAL_SEATS - disabledSeats.size;
+    const currentTotalSeats = getRequiredTotalSeats(eligibleStudents.length, disabledSeats);
+    let disabledInC = 0;
+    for (let d of disabledSeats) if (d <= currentTotalSeats) disabledInC++;
+    const activeSeatCount = currentTotalSeats - disabledInC;
+
+    const displaySeats = makeEmptySeats(currentTotalSeats).map((emptySeat, i) => {
+        return seats[i] || emptySeat;
+    });
 
     const columns: SeatData[][] = [];
-    for (let c = 0; c < 5; c++) columns.push(seats.slice(c * 10, (c + 1) * 10));
+    for (let c = 0; c < currentTotalSeats / 10; c++) {
+        columns.push(displaySeats.slice(c * 10, (c + 1) * 10));
+    }
 
     const TAB_CONFIG: { id: TabId; label: string; icon: React.ReactNode }[] = [
         { id: "seats", label: "Kursi", icon: <LuLayoutGrid /> },
@@ -426,7 +464,7 @@ export default function KursiGenerator() {
                 isKelasLoading={isKelasLoading}
                 handleGenerate={handleGenerate}
                 handleReset={handleReset}
-                totalSeats={TOTAL_SEATS}
+                totalSeats={currentTotalSeats}
                 projectorConfig={projectorConfig}
                 setProjectorConfig={setProjectorConfig}
                 versions={versions}

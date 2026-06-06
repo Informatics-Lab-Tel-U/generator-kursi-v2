@@ -141,45 +141,6 @@ export default function CountdownTab({
     );
 
     const startRace = useCallback(() => {
-        const now = new Date();
-        const day = now.getDay();
-        let daySessions: {start: string, end: string}[] = [];
-        
-        if (day >= 1 && day <= 4) {
-            daySessions = [
-                { start: '06:40', end: '08:20' },
-                { start: '09:40', end: '11:20' },
-                { start: '12:40', end: '14:20' },
-                { start: '15:40', end: '17:20' }
-            ];
-        } else if (day === 5) {
-            daySessions = [
-                { start: '07:40', end: '09:20' },
-                { start: '13:40', end: '15:20' }
-            ];
-        } else if (day === 6) {
-            daySessions = [
-                { start: '07:40', end: '09:20' },
-                { start: '10:40', end: '12:20' },
-                { start: '13:40', end: '15:20' },
-                { start: '16:40', end: '18:20' }
-            ];
-        }
-        
-        const currentMinutes = now.getHours() * 60 + now.getMinutes();
-        let targetSession = null;
-        for (const session of daySessions) {
-            const [endH, endM] = session.end.split(':').map(Number);
-            const endMins = endH * 60 + endM;
-            if (currentMinutes <= endMins) {
-                targetSession = session;
-                break;
-            }
-        }
-        if (!targetSession && daySessions.length > 0) {
-            targetSession = daySessions[daySessions.length - 1];
-        }
-
         const shuffledRacers = [...racers].sort(() => Math.random() - 0.5);
         const newJitter: Record<string, RacerJitter> = {};
 
@@ -198,7 +159,6 @@ export default function CountdownTab({
                 ...p, 
                 isRunning: true, 
                 startedAt: Date.now(),
-                ...(targetSession ? { startTime: targetSession.start, endTime: targetSession.end } : {})
             }));
     }, [racers, setTimer]);
 
@@ -538,8 +498,8 @@ export default function CountdownTab({
                 </div>
             )}
 
-            <div className="race-track-container">
-                <div style={{ textAlign: "center", marginBottom: "24px" }}>
+            <div className="race-track-container" style={{ marginTop: readOnly ? 0 : "24px" }}>
+                <div style={{ textAlign: "center", marginBottom: readOnly ? "0" : "24px" }}>
                     <div
                         style={{
                             fontSize: "12px",
@@ -569,64 +529,67 @@ export default function CountdownTab({
                         </div>
                     )}
                 </div>
-
-                <div className="race-track">
-                    {racers.length === 0 ? (
-                        <div
-                            style={{
-                                padding: "40px",
-                                textAlign: "center",
-                                color: "var(--text-muted)",
-                                fontSize: "14px",
-                            }}
-                        >
-                            Belum ada pembalap. Tambahkan pembalap di atas.
-                        </div>
-                    ) : (
-                        racers.map((racer) => {
-                            const j = jitterMapRef.current[racer.id];
-                            const progressFraction = 1 - timerRatio;
-                            let racerProgress = progressFraction * 100;
-                            if (j) {
-                                const blendedOffset =
-                                    j.currentOffset * (1 - progressFraction) +
-                                    j.finalOffset * progressFraction;
-                                racerProgress += blendedOffset;
-                            }
-                            if (timerRatio > 0) {
-                                racerProgress = Math.max(
-                                    0,
-                                    Math.min(racerProgress, 99.5),
-                                );
-                            } else {
-                                racerProgress = j ? 100 + j.finalOffset : 100;
-                            }
-                            return (
-                                <div key={racer.id} className="race-lane">
-                                    <div
-                                        className="racer-vehicle"
-                                        style={{
-                                            left: `calc(${racerProgress}% - ${(racerProgress / 100) * 88}px)`,
-                                        }}
-                                    >
-                                        <div className="racer-avatar">
-                                            {racer.imageBase64 ? (
-                                                <img
-                                                    src={racer.imageBase64}
-                                                    alt={racer.name}
-                                                />
-                                            ) : (
-                                                <span>{racer.name}</span>
-                                            )}
+                
+                {!readOnly && (
+                    <div className="race-track">
+                        {racers.length === 0 ? (
+                            <div
+                                style={{
+                                    padding: "40px",
+                                    textAlign: "center",
+                                    color: "var(--text-muted)",
+                                    fontSize: "14px",
+                                }}
+                            >
+                                Belum ada pembalap. Tambahkan pembalap di atas.
+                            </div>
+                        ) : (
+                            racers.map((racer) => {
+                                const j = jitterMapRef.current[racer.id];
+                                const progressFraction = 1 - timerRatio;
+                                let racerProgress = progressFraction * 100;
+                                if (j) {
+                                    const blendedOffset =
+                                        j.currentOffset * (1 - progressFraction) +
+                                        j.finalOffset * progressFraction;
+                                    racerProgress += blendedOffset;
+                                }
+                                if (timerRatio > 0) {
+                                    racerProgress = Math.max(
+                                        0,
+                                        Math.min(racerProgress, 99.5),
+                                    );
+                                } else {
+                                    racerProgress = j ? 100 + j.finalOffset : 100;
+                                }
+                                return (
+                                    <div key={racer.id} className="race-lane">
+                                        <div
+                                            className="racer-vehicle"
+                                            style={{
+                                                left: `calc(${racerProgress}% - ${(racerProgress / 100) * 88}px)`,
+                                            }}
+                                        >
+                                            <div className="racer-avatar">
+                                                {racer.imageBase64 ? (
+                                                    <img
+                                                        src={racer.imageBase64}
+                                                        alt={racer.name}
+                                                    />
+                                                ) : (
+                                                    <span>{racer.name}</span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            );
-                        })
-                    )}
-                    <div className="finish-line"></div>
-                </div>
+                                );
+                            })
+                        )}
+                        <div className="finish-line"></div>
+                    </div>
+                )}
             </div>
+            
             <LeaderboardView room={kelas} students={eligibleStudents} />
         </div>
     );

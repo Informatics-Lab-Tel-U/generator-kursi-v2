@@ -70,7 +70,7 @@ export default function SeatsTab({
 }: SeatsTabProps) {
   return (
     <div>
-      <div className="seat-grid">
+      <div className="seat-grid" style={{ gridTemplateColumns: `repeat(${columns.length}, 1fr)` }}>
         {columns.map((column, colIdx) => (
           <div key={colIdx} className="seat-column">
             <div className="seat-column-header">

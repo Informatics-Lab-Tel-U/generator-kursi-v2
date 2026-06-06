@@ -115,7 +115,7 @@ export default function Sidebar({
             </span>
           )}
         </label>
-        <div className="seat-toggle-grid">
+        <div className="seat-toggle-grid" style={{ gridTemplateColumns: `repeat(${totalSeats / 10}, 1fr)` }}>
           {Array.from(
             { length: totalSeats },
             (_, i) => i + 1,
