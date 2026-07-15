@@ -2,9 +2,6 @@ import type { APIRoute } from "astro";
 
 export const prerender = false;
 
-const kelasCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL = 1000 * 60 * 60; // 1 jam
-
 export const GET: APIRoute = async ({ request }) => {
     try {
         const url = new URL(request.url);
@@ -13,14 +10,6 @@ export const GET: APIRoute = async ({ request }) => {
         if (!mataKuliah) {
             return new Response(JSON.stringify({ ok: false, error: "mata_kuliah wajib diisi" }), {
                 status: 400,
-                headers: { "Content-Type": "application/json" }
-            });
-        }
-
-        const cached = kelasCache.get(mataKuliah);
-        if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-            return new Response(JSON.stringify(cached.data), {
-                status: 200,
                 headers: { "Content-Type": "application/json" }
             });
         }
@@ -38,10 +27,6 @@ export const GET: APIRoute = async ({ request }) => {
 
         const res = await fetch(targetUrl, { headers });
         const data = await res.json();
-        
-        if (res.ok && data) {
-            kelasCache.set(mataKuliah, { data, timestamp: Date.now() });
-        }
 
         return new Response(JSON.stringify(data), {
             status: res.status,
