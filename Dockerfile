@@ -9,7 +9,7 @@ RUN npm ci --omit=dev
 # Install all dependencies (including dev) for building
 FROM base AS build-deps
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci  
 
 # Build the Astro app
 FROM build-deps AS build

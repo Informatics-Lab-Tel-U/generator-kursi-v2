@@ -3,12 +3,7 @@ import { parse } from "node-html-parser";
 
 export const prerender = false;
 
-if (!(global as any).leaderboardData) {
-    (global as any).leaderboardData = {};
-}
-if (!(global as any).leaderboardClients) {
-    (global as any).leaderboardClients = {};
-}
+import { kv } from "@vercel/kv";
 
 export const ALL: APIRoute = async ({ request }) => {
     if (request.method === "OPTIONS") {
@@ -101,17 +96,8 @@ export const POST: APIRoute = async ({ request, url }) => {
             }
         }
 
-        (global as any).leaderboardData[room] = data;
-
-        const clients = (global as any).leaderboardClients[room] || new Set();
-        const payload = JSON.stringify(data);
-        for (const client of clients) {
-            try {
-                client.write(`data: ${payload}\n\n`);
-            } catch (e) {
-                // Ignore write errors
-            }
-        }
+        // Save to Vercel KV with 1 day expiration
+        await kv.set(`leaderboard:${room}`, data, { ex: 60 * 60 * 24 });
 
         return new Response(JSON.stringify({ success: true, count: data.length }), {
             status: 200,

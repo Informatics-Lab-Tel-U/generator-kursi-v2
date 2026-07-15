@@ -41,32 +41,32 @@ export default function LeaderboardView({ room, students }: LeaderboardViewProps
         setLastUpdated(null);
         setIsConnected(false);
 
-        const eventSource = new EventSource(`/api/stream?room=${encodeURIComponent(room)}`);
-
-        eventSource.onopen = () => {
-            setIsConnected(true);
-        };
-
-        eventSource.onmessage = (event) => {
+        const fetchData = async () => {
             try {
-                const incomingData = JSON.parse(event.data);
-                if (Array.isArray(incomingData)) {
-                    setRealtimeData(incomingData);
-                    const now = new Date();
-                    setLastUpdated(now.toLocaleTimeString());
-                    setLastUpdateDate(now);
-                    setIsDataStale(false);
+                const response = await fetch(`/api/leaderboard?room=${encodeURIComponent(room)}`);
+                if (response.ok) {
+                    const incomingData = await response.json();
+                    if (Array.isArray(incomingData)) {
+                        setRealtimeData(incomingData);
+                        const now = new Date();
+                        setLastUpdated(now.toLocaleTimeString());
+                        setLastUpdateDate(now);
+                        setIsDataStale(false);
+                        setIsConnected(true);
+                    }
+                } else {
+                    setIsConnected(false);
                 }
             } catch (error) {
-                console.error("Failed parsing message:", error);
+                console.error("Failed fetching leaderboard data:", error);
+                setIsConnected(false);
             }
         };
 
-        eventSource.onerror = () => {
-            setIsConnected(false);
-        };
+        fetchData();
+        const interval = setInterval(fetchData, 3000);
 
-        return () => eventSource.close();
+        return () => clearInterval(interval);
     }, [room]);
 
     useEffect(() => {
