@@ -40,7 +40,7 @@ function formatName(name: string): { defaultName: string, smallName: string } {
   if (!name) return { defaultName: "", smallName: "" };
   const parts = name.split(' ').filter(Boolean);
   if (parts.length === 1) return { defaultName: parts[0], smallName: parts[0] };
-  
+
   const defaultName = [
     parts[0],
     parts[1],
