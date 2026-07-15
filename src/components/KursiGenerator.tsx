@@ -65,18 +65,27 @@ function useTheme() {
 
     return { theme, toggleTheme };
 }
+import { QueryClient, QueryClientProvider, useQuery } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
 
 export default function KursiGenerator() {
+    return (
+        <QueryClientProvider client={queryClient}>
+            <KursiGeneratorInner />
+        </QueryClientProvider>
+    );
+}
+
+function KursiGeneratorInner() {
     const { theme, toggleTheme } = useTheme();
     const [matkul, setMatkul] = useState("");
     const [kelas, setKelas] = useState("");
     const [seats, setSeats] = useState<SeatData[]>(makeEmptySeats(50));
     const [disabledSeats, setDisabledSeats] = useState<Set<number>>(new Set([1, 2]));
     const [activeTab, setActiveTab] = useState<TabId>("seats");
-    const [isLoading, setIsLoading] = useState(false);
-    const [isOptionsLoading, setIsOptionsLoading] = useState(false);
-    const [showSidebar, setShowSidebar] = useState(true);
 
+    const [showSidebar, setShowSidebar] = useState(true);
     const [versions, setVersions] = useState<SeatVersion[]>([]);
 
     useEffect(() => {
@@ -91,168 +100,80 @@ export default function KursiGenerator() {
                     localStorage.setItem("kursi_versions", JSON.stringify(valid));
                 }
             }
-        } catch (e) {}
+        } catch (e) { }
     }, []);
 
-    // API State
-    const [matkulOptions, setMatkulOptions] = useState<
-        { value: string; label: string }[]
-    >([]);
-    const [kelasOptions, setKelasOptions] = useState<
-        { value: string; label: string }[]
-    >([]);
-    const [isKelasLoading, setIsKelasLoading] = useState(false);
-    const [eligibleStudents, setEligibleStudents] = useState<Student[]>([]);
+    // React Query State
+    const { data: matkulOptions = [], isLoading: isOptionsLoading } = useQuery({
+        queryKey: ['matkulOptions'],
+        queryFn: async () => {
+            const res = await fetch("/api/praktikan/mata-kuliah");
+            const data = await res.json();
+            if (data && data.ok && Array.isArray(data.data)) {
+                return data.data.map((m: string) => ({ value: m, label: m }));
+            }
+            return [];
+        },
+        staleTime: 1000 * 60 * 5, // 5 menit
+    });
 
-    // 1. Fetch mata kuliah list on mount
+    const { data: kelasOptions = [], isLoading: isKelasLoading } = useQuery({
+        queryKey: ['kelasOptions', matkul],
+        queryFn: async () => {
+            if (!matkul) return [];
+            const res = await fetch(`/api/praktikan/kelas?mata_kuliah=${encodeURIComponent(matkul)}`);
+            const data = await res.json();
+            if (data && data.ok && Array.isArray(data.data)) {
+                return data.data.map((k: string) => ({ value: k, label: k }));
+            }
+            return [];
+        },
+        enabled: !!matkul,
+        staleTime: 1000 * 60 * 5,
+    });
+
+    const { data: eligibleStudents = [], isLoading } = useQuery({
+        queryKey: ['students', matkul, kelas],
+        queryFn: async () => {
+            if (!matkul || !kelas) return [];
+            let url = `/api/praktikan?mata_kuliah=${encodeURIComponent(matkul)}&kelas=${encodeURIComponent(kelas)}`;
+            const res = await fetch(url);
+            const data = await res.json();
+            const payload = data.data || data;
+            if (Array.isArray(payload)) {
+                return payload.map((s: any) => ({
+                    id: s.id ? String(s.id) : `stu-${Math.random()}`,
+                    name: s.nama || "Unknown",
+                    kelas: s.kelas || kelas,
+                    asprak: s.kode_asprak || "N/A",
+                }));
+            }
+            return [];
+        },
+        enabled: !!matkul && !!kelas,
+        staleTime: 1000 * 60 * 5,
+    });
+
+    // Handle auto-generation when students change
     useEffect(() => {
-        const fetchMataKuliah = async () => {
-            const cacheKey = "kursi_matkul_cache";
-            const cached = sessionStorage.getItem(cacheKey);
-            if (cached) {
-                try {
-                    const data = JSON.parse(cached);
-                    if (data && data.ok && Array.isArray(data.data)) {
-                        setMatkulOptions(data.data.map((m: string) => ({ value: m, label: m })));
-                        return;
-                    }
-                } catch (e) {
-                    // Ignore cache if parsing fails
-                }
-            }
-
-            setIsOptionsLoading(true);
-            try {
-                const res = await fetch("/api/praktikan/mata-kuliah");
-                const data = await res.json();
-
-                if (data && data.ok && Array.isArray(data.data)) {
-                    sessionStorage.setItem(cacheKey, JSON.stringify(data));
-                    setMatkulOptions(data.data.map((m: string) => ({ value: m, label: m })));
-                }
-            } catch (e) {
-                console.error("Failed to fetch mata kuliah:", e);
-            } finally {
-                setIsOptionsLoading(false);
-            }
-        };
-
-        fetchMataKuliah();
-    }, []);
-
-    // 2. Fetch kelas list when mata kuliah changes
-    useEffect(() => {
-        if (!matkul) {
-            setKelasOptions([]);
-            return;
-        }
-
-        const fetchKelas = async () => {
-            const cacheKey = `kursi_kelas_${matkul}`;
-            const cached = sessionStorage.getItem(cacheKey);
-            if (cached) {
-                try {
-                    const data = JSON.parse(cached);
-                    if (data && data.ok && Array.isArray(data.data)) {
-                        setKelasOptions(data.data.map((k: string) => ({ value: k, label: k })));
-                        return;
-                    }
-                } catch (e) {
-                    // Ignore cache if parsing fails
-                }
-            }
-
-            setIsKelasLoading(true);
-            try {
-                const res = await fetch(`/api/praktikan/kelas?mata_kuliah=${encodeURIComponent(matkul)}`);
-                const data = await res.json();
-
-                if (data && data.ok && Array.isArray(data.data)) {
-                    sessionStorage.setItem(cacheKey, JSON.stringify(data));
-                    setKelasOptions(data.data.map((k: string) => ({ value: k, label: k })));
-                } else {
-                    setKelasOptions([]);
-                }
-            } catch (e) {
-                console.error("Failed to fetch kelas:", e);
-                setKelasOptions([]);
-            } finally {
-                setIsKelasLoading(false);
-            }
-        };
-
-        fetchKelas();
-    }, [matkul]);
-
-    // 3. Fetch students when both mata kuliah and kelas are selected
-    useEffect(() => {
-        if (!matkul || !kelas) {
-            setEligibleStudents([]);
+        if (!matkul || !kelas || eligibleStudents.length === 0) {
             setSeats(makeEmptySeats(50));
             return;
         }
 
-        const fetchStudents = async () => {
-            const cacheKey = kelas
-                ? `kursi_students_${matkul}_${kelas}`
-                : `kursi_students_${matkul}`;
-            const cached = sessionStorage.getItem(cacheKey);
-
-            setIsLoading(true);
-            try {
-                let data;
-                if (cached) {
-                    try {
-                        data = JSON.parse(cached);
-                    } catch (e) {}
-                }
-
-                if (!data) {
-                    let url = `/api/praktikan?mata_kuliah=${encodeURIComponent(matkul)}`;
-                    if (kelas) {
-                        url += `&kelas=${encodeURIComponent(kelas)}`;
-                    }
-                    const res = await fetch(url);
-                    data = await res.json();
-                    if (data && (data.ok || data.data || Array.isArray(data))) {
-                        sessionStorage.setItem(cacheKey, JSON.stringify(data));
-                    }
-                }
-
-                let students: Student[] = [];
-                const payload = data.data || data;
-
-                if (Array.isArray(payload)) {
-                    students = payload.map((s: any) => ({
-                        id: s.id ? String(s.id) : `stu-${Math.random()}`,
-                        name: s.nama || "Unknown",
-                        kelas: s.kelas || kelas,
-                        asprak: s.kode_asprak || "N/A",
-                    }));
-                }
-
-                setEligibleStudents(students);
-
-                // Auto generate immediately
-                const shuffled = fisherYatesShuffle(students);
-                const reqSeats = getRequiredTotalSeats(students.length, disabledSeats);
-                const newSeats = makeEmptySeats(reqSeats);
-                let idx = 0;
-                for (let i = 0; i < reqSeats; i++) {
-                    if (!disabledSeats.has(i + 1) && idx < shuffled.length) {
-                        newSeats[i].student = shuffled[idx++];
-                    }
-                }
-                setSeats(newSeats);
-            } catch (e) {
-                console.error("Failed to fetch students:", e);
-                setEligibleStudents([]);
-            } finally {
-                setIsLoading(false);
+        // Auto generate immediately
+        const shuffled = fisherYatesShuffle(eligibleStudents);
+        const reqSeats = getRequiredTotalSeats(eligibleStudents.length, disabledSeats);
+        const newSeats = makeEmptySeats(reqSeats);
+        let idx = 0;
+        for (let i = 0; i < reqSeats; i++) {
+            if (!disabledSeats.has(i + 1) && idx < shuffled.length) {
+                newSeats[i].student = shuffled[idx++];
             }
-        };
-        fetchStudents();
-    }, [matkul, kelas]);
+        }
+        setSeats(newSeats);
+    }, [eligibleStudents, matkul, kelas]); // Dependency on eligibleStudents reference from useQuery
+
     const [dragSourceSeat, setDragSourceSeat] = useState<number | null>(null);
     const [dragOverSeat, setDragOverSeat] = useState<number | null>(null);
 
@@ -314,7 +235,8 @@ export default function KursiGenerator() {
 
     // Generate
     const handleGenerate = useCallback(() => {
-        setIsLoading(true);
+        // Simulasikan loading singkat saat tombol diklik agar UI lebih responsif
+        setSeats([]);
         setTimeout(() => {
             const filtered = eligibleStudents;
             const shuffled = fisherYatesShuffle(filtered);
@@ -327,7 +249,6 @@ export default function KursiGenerator() {
                 }
             }
             setSeats(newSeats);
-            setIsLoading(false);
 
             const newVersion: SeatVersion = {
                 id: Math.random().toString(36).substring(2, 11),
